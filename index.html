@@ -16,7 +16,6 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:100dvh;overflow:hidden;color:var(--tx);}
-/* ── SETUP SCREEN ── */
 #setup{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:20px;}
 .setup-logo{width:72px;height:72px;border-radius:24px;background:var(--or);display:flex;align-items:center;justify-content:center;}
 .setup-logo svg{stroke:#fff;}
@@ -31,7 +30,6 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .btn-start{width:100%;max-width:360px;padding:14px;border-radius:14px;border:none;background:var(--or);color:#fff;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:-0.3px;box-shadow:0 8px 24px rgba(232,84,30,0.35);}
 .btn-start:active{transform:scale(0.98);}
 .setup-err{color:#dc2626;font-size:12px;text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;width:100%;max-width:360px;}
-/* ── MAIN APP ── */
 #app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:var(--sur);box-shadow:0 0 60px rgba(0,0,0,0.08);}
 .hd{background:var(--or);padding:14px 18px;padding-top:max(14px,var(--sp-top));border-radius:0 0 22px 22px;box-shadow:0 6px 24px rgba(232,84,30,0.35);flex-shrink:0;}
 .hd-in{display:flex;align-items:center;justify-content:space-between;}
@@ -43,7 +41,6 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .hd-btns{display:flex;gap:8px;}
 .hd-btn{background:rgba(255,255,255,0.18);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;}
 .hd-btn:active{background:rgba(255,255,255,0.32);}
-/* ── CHAT ── */
 .chat{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 12px;display:flex;flex-direction:column;gap:12px;}
 .chat::-webkit-scrollbar{width:3px;}
 .chat::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px;}
@@ -59,13 +56,11 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .bub-hd{display:flex;align-items:flex-start;gap:5px;}
 .btn-spk{background:none;border:none;cursor:pointer;color:var(--or);padding:1px;flex-shrink:0;opacity:0.7;}
 .btn-spk:active{opacity:1;}
-/* Loading */
 .ld-row{display:flex;}.ld-bub{background:var(--ai);border-radius:4px 18px 18px 18px;padding:14px 18px;display:flex;gap:5px;align-items:center;}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--or);animation:db 1.2s ease-in-out infinite;}
 .dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
 @keyframes db{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
 .err-box{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:12px;padding:9px 13px;font-size:12px;line-height:1.5;}
-/* ── FOOTER ── */
 .ft{background:var(--sur);border-top:1.5px solid var(--bd);border-radius:22px 22px 0 0;padding:11px 14px;padding-bottom:max(18px,var(--sp-bot));box-shadow:0 -4px 20px rgba(0,0,0,0.05);flex-shrink:0;}
 .suggs{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;}
 .suggs::-webkit-scrollbar{display:none;}
@@ -89,7 +84,6 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 </head>
 <body>
 
-<!-- ── SETUP SCREEN ── -->
 <div id="setup">
   <div class="setup-logo">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -110,7 +104,6 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
   <button class="btn-start" onclick="startApp()">Bắt đầu luyện tập →</button>
 </div>
 
-<!-- ── MAIN APP ── -->
 <div id="app" style="display:none;">
   <div class="hd">
     <div class="hd-in">
@@ -154,25 +147,28 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 </div>
 
 <script>
-// ── CONFIG ──
-// Gemini v1beta — đây là endpoint duy nhất hỗ trợ đầy đủ các model
-const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-const KEY_STORE   = 'tutor_gemini_key';
+// ==================== FIX: CORRECT GEMINI ENDPOINT ====================
+// Sử dụng v1beta và model gemini-1.5-flash-latest (ổn định, hỗ trợ đầy đủ)
+// Fallback sang gemini-pro nếu lỗi model not found
+const GEMINI_MODELS = [
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash',
+  'gemini-pro'
+];
+const KEY_STORE = 'tutor_gemini_key';
 
-// ── STATE ──
 let API_KEY = '';
-let busy=false, recording=false, spkUnlock=false, rec=null, mid=0;
+let busy = false, recording = false, spkUnlock = false, rec = null, mid = 0;
 let suggs = ["I'm fine, thanks!", "Not bad, and you?"];
 
-// ── DOM ──
-const chatEl  = document.getElementById('chat');
+const chatEl = document.getElementById('chat');
 const suggsEl = document.getElementById('suggs');
-const inp     = document.getElementById('txtin');
-const sndBtn  = document.getElementById('sndbtn');
-const micBtn  = document.getElementById('micbtn');
-const micLbl  = document.getElementById('miclbl');
+const inp = document.getElementById('txtin');
+const sndBtn = document.getElementById('sndbtn');
+const micBtn = document.getElementById('micbtn');
+const micLbl = document.getElementById('miclbl');
 
-// ── SETUP ──
+// ==================== SETUP ====================
 function startApp() {
   const key = document.getElementById('keyInput').value.trim();
   if (!key.startsWith('AIza') || key.length < 30) {
@@ -182,7 +178,7 @@ function startApp() {
   API_KEY = key;
   localStorage.setItem(KEY_STORE, key);
   document.getElementById('setup').style.display = 'none';
-  document.getElementById('app').style.display   = 'flex';
+  document.getElementById('app').style.display = 'flex';
   initChat();
 }
 
@@ -195,20 +191,19 @@ function logout() {
   window.speechSynthesis?.cancel(); stopMic();
   localStorage.removeItem(KEY_STORE);
   API_KEY = '';
-  document.getElementById('app').style.display   = 'none';
+  document.getElementById('app').style.display = 'none';
   document.getElementById('setup').style.display = 'flex';
   document.getElementById('keyInput').value = '';
   document.getElementById('setupErr').style.display = 'none';
 }
 
-// Auto-login nếu đã có key
 window.addEventListener('DOMContentLoaded', () => {
   const saved = localStorage.getItem(KEY_STORE);
   if (saved) {
     API_KEY = saved;
     document.getElementById('keyInput').value = saved;
     document.getElementById('setup').style.display = 'none';
-    document.getElementById('app').style.display   = 'flex';
+    document.getElementById('app').style.display = 'flex';
     initChat();
   }
   document.getElementById('keyInput').addEventListener('keydown', e => {
@@ -216,7 +211,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ── CHAT INIT ──
+// ==================== CHAT INIT ====================
 function initChat() {
   chatEl.innerHTML = ''; mid = 0; busy = false; spkUnlock = false;
   suggs = ["I'm fine, thanks!", "Not bad, and you?"];
@@ -230,12 +225,14 @@ function initChat() {
   inp.addEventListener('focus', unlockSpk);
 }
 
-// ── iOS SPEECH FIX ──
+// iOS speech synthesis unlock
 function unlockSpk() {
   if (spkUnlock || !window.speechSynthesis) return;
   const u = new SpeechSynthesisUtterance(''); u.volume = 0;
-  window.speechSynthesis.speak(u); spkUnlock = true;
+  window.speechSynthesis.speak(u);
+  spkUnlock = true;
 }
+
 function speakTxt(t) {
   if (!t || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -246,44 +243,62 @@ function speakTxt(t) {
   }, 120);
 }
 
-// ── GEMINI API ──
-// Sử dụng v1beta — đây là endpoint ổn định, hỗ trợ gemini-1.5-flash
-async function callGemini(userMsg) {
+// ==================== GEMINI CALL WITH FALLBACK ====================
+async function callGeminiWithFallback(userMsg, modelIndex = 0) {
+  if (modelIndex >= GEMINI_MODELS.length) {
+    throw new Error('Không tìm thấy model nào hoạt động. Vui lòng thử lại sau hoặc kiểm tra API key.');
+  }
+  const model = GEMINI_MODELS[modelIndex];
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+  
   const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
 Return ONLY a raw JSON object, no markdown, no code blocks, no extra text:
 {"en":"<English reply>","vi":"<Vietnamese translation>","tip":"<one grammar/vocab tip in Vietnamese, max 15 words>","sug":["<suggestion 1>","<suggestion 2>"]}
 Student: ${userMsg}`;
 
-  const res = await fetch(`${GEMINI_BASE}?key=${API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
-    })
-  });
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
+      })
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = err?.error?.message || `HTTP ${res.status}`;
-    // Nếu key hết quota hoặc bị khoá
-    if (res.status === 400 || res.status === 403) {
-      throw new Error(msg + ' — Thử logout và nhập lại API key.');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const errMsg = errData?.error?.message || `HTTP ${res.status}`;
+      // Nếu lỗi liên quan đến model not found, thử model tiếp theo
+      if (errMsg.includes('not found') || errMsg.includes('not supported') || res.status === 404) {
+        console.warn(`Model ${model} failed, trying next...`);
+        return callGeminiWithFallback(userMsg, modelIndex + 1);
+      }
+      // Lỗi key quota hoặc xác thực
+      if (res.status === 400 || res.status === 403 || res.status === 401) {
+        throw new Error(`${errMsg} — Kiểm tra lại API key hoặc hạn mức.`);
+      }
+      throw new Error(errMsg);
     }
-    throw new Error(msg);
-  }
 
-  const data = await res.json();
-  let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  // Dọn markdown nếu AI trả về
-  raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-  // Lấy JSON từ trong raw nếu có text thừa trước/sau
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('AI trả về sai định dạng. Thử lại.');
-  return JSON.parse(match[0]);
+    const data = await res.json();
+    let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('AI trả về sai định dạng JSON.');
+    return JSON.parse(match[0]);
+  } catch (e) {
+    // Nếu lỗi mạng hoặc lỗi khác, không fallback nữa
+    if (e.message.includes('network') || e.message.includes('fetch')) throw e;
+    // Nếu lỗi do model, tiếp tục fallback
+    if (e.message.includes('not found') || e.message.includes('404')) {
+      return callGeminiWithFallback(userMsg, modelIndex + 1);
+    }
+    throw e;
+  }
 }
 
-// ── SEND ──
+// ==================== SEND MESSAGE ====================
 async function sendMsg(txt) {
   const v = (txt || '').trim();
   if (!v || busy) return;
@@ -293,26 +308,30 @@ async function sendMsg(txt) {
   addMsg('user', { en: v });
   const lid = addLoading();
   try {
-    const res = await callGemini(v);
+    const res = await callGeminiWithFallback(v);
     removeEl(lid);
     addMsg('ai', { en: res.en, vi: res.vi, tip: res.tip });
     if (res.sug?.length) { suggs = res.sug; renderSuggs(suggs); }
     speakTxt(res.en);
   } catch(e) {
     removeEl(lid);
-    showErr(e.message);
+    let errorMsg = e.message;
+    if (errorMsg.includes('API key')) errorMsg = 'API key không hợp lệ hoặc đã hết hạn. Hãy logout và nhập lại key mới.';
+    else if (errorMsg.includes('quota')) errorMsg = 'Đã hết lượt dùng thử Gemini. Vui lòng đợi hoặc nâng cấp tài khoản.';
+    else if (errorMsg.includes('network')) errorMsg = 'Lỗi mạng, hãy kiểm tra kết nối internet.';
+    showErr(errorMsg);
   } finally {
     setBusy(false);
   }
 }
 function sendFromInput() { sendMsg(inp.value); }
 
-// ── MIC ──
+// ==================== MICROPHONE ====================
 function toggleMic() {
   unlockSpk();
   if (recording) { stopMic(); return; }
   const R = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!R) { showErr('Dùng Safari iOS 14.5+ hoặc Chrome để dùng mic.'); return; }
+  if (!R) { showErr('Trình duyệt không hỗ trợ nhận dạng giọng nói. Dùng Safari iOS 14.5+ hoặc Chrome.'); return; }
   rec = new R();
   rec.lang = 'en-US'; rec.continuous = false; rec.interimResults = false;
   rec.onstart = () => {
@@ -324,9 +343,9 @@ function toggleMic() {
     stopMic();
     const m = {
       'not-allowed': 'Chưa cấp quyền mic. Settings → Safari → Microphone → Allow.',
-      'no-speech':   'Không nghe thấy. Thử lại nhé!',
+      'no-speech':   'Không nghe thấy giọng nói. Thử lại nhé!',
       'network':     'Lỗi mạng khi nhận dạng giọng nói.',
-      'audio-capture': 'Không truy cập được microphone.',
+      'audio-capture': 'Không truy cập được microphone.'
     };
     if (e.error !== 'no-speech') showErr(m[e.error] || `Lỗi mic: ${e.error}`);
   };
@@ -339,7 +358,7 @@ function stopMic() {
   try { rec?.stop(); } catch(e) {}
 }
 
-// ── UI HELPERS ──
+// ==================== UI HELPERS ====================
 function addMsg(role, data) {
   const id = 'm'+(++mid), div = document.createElement('div');
   div.className = 'row '+role; div.id = id;
