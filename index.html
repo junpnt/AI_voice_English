@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily English Voice Tutor</title>
-    <!-- Tailwind CSS v3 (dễ dùng cho single file) -->
+    <title>Daily English Voice Tutor - AI English Assistant</title>
+    <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,8 +12,7 @@
         body { font-family: 'Inter', sans-serif; background-color: #FDFCFB; }
         .rounded-tl-sm { border-top-left-radius: 4px !important; }
         .rounded-tr-sm { border-top-right-radius: 4px !important; }
-        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        .animate-bounce-slow { animation: bounce-slow 1s infinite; }
+        .suggestions-container::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="text-[#1D1D1F]">
@@ -26,7 +25,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
     
-    <!-- Gemini SDK -->
+    <!-- Gemini SDK via ESM -->
     <script type="importmap">
     {
       "imports": {
@@ -38,132 +37,248 @@
     <script type="text/babel" data-type="module">
         import { GoogleGenAI } from "@google/genai";
 
-        // IMPORTANT: Thay bằng API Key của bạn để chạy trên GitHub/Máy cục bộ
+        // === CẤU HÌNH API KEY CỦA BẠN TẠI ĐÂY ===
         const GEMINI_API_KEY = "YOUR_API_KEY_HERE"; 
 
         const SYSTEM_PROMPT = `You are a patient and friendly English Tutor for Vietnamese beginners. 
 Your goal is to help the user practice daily English conversations.
+Context: Beginners often don't know what to say. You must be proactive. 
+Rules:
 1. Speak clearly and slowly. 
-2. Use simple and common daily vocabulary.
-3. If the user makes a mistake, gently correct them.
-4. Provide meanings in Vietnamese for new words in parentheses.
-5. Always provide 2-3 short "suggestions" in English for the user to answer.
+2. Use simple daily vocabulary.
+3. Gently correct grammatical or pronunciation mistakes.
+4. Provide meanings in Vietnamese for difficult words in parentheses.
+5. Proactivity: Always provide 2-3 short "suggested responses" in English for the user to answer your question.
 Respond in JSON: {"text": "audio text", "display": "ui text", "feedback": "correction", "vocabulary": [{"word": "A", "meaning": "B"}], "suggestions": ["S1", "S2"]}`;
 
+        const { useState, useEffect, useRef, useCallback } = React;
+        const { motion, AnimatePresence } = FramerMotion;
+
         const App = () => {
-            const [messages, setMessages] = React.useState([{
+            const [messages, setMessages] = useState([{
                 id: '1', role: 'assistant', 
                 text: "Hello! I'm your English tutor. Ready to practice? Let's talk about your day!",
                 displayText: "Chào bạn! Tôi là trợ lý tiếng Anh của bạn. Bạn đã sẵn sàng luyện tập chưa?",
-                suggestions: ["I am doing great!", "I had a busy day"]
+                suggestions: ["I am doing great!", "I had a busy day", "I stayed at home today"]
             }]);
-            const [isListening, setIsListening] = React.useState(false);
-            const [isProcessing, setIsProcessing] = React.useState(false);
-            const [currentFeedback, setCurrentFeedback] = React.useState({ newWords: [], suggestions: ["I am doing great!", "I had a busy day"] });
-            const [transcript, setTranscript] = React.useState('');
-            const scrollRef = React.useRef(null);
+            const [isListening, setIsListening] = useState(false);
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [currentFeedback, setCurrentFeedback] = useState({ 
+                correction: null, 
+                newWords: [], 
+                suggestions: ["I am doing great!", "I had a busy day", "I stayed at home today"] 
+            });
+            const [transcript, setTranscript] = useState('');
+            const [errorHeader, setErrorHeader] = useState(null);
+            
+            const scrollRef = useRef(null);
+            const recognitionRef = useRef(null);
+            const transcriptRef = useRef('');
 
             const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-            React.useEffect(() => {
+            useEffect(() => {
                 scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, [messages]);
 
             const speak = (text) => {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
+                const voices = window.speechSynthesis.getVoices();
+                const enVoice = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en'));
+                if (enVoice) utterance.voice = enVoice;
                 utterance.lang = 'en-US';
-                utterance.rate = 0.85;
+                utterance.rate = 0.8;
                 window.speechSynthesis.speak(utterance);
             };
 
-            const chatWithAI = async (input, history) => {
-                const contents = [...history, { role: 'user', parts: [{ text: input }] }];
-                const response = await ai.models.generateContent({
-                    model: "gemini-1.5-flash", // Dùng model ổn định
-                    contents: contents,
-                    config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: "application/json" }
-                });
-                return JSON.parse(response.candidates[0].content.parts[0].text);
-            };
-
             const handleUserAction = async (text) => {
+                if (!text.trim()) return;
                 const userMsg = { id: Date.now().toString(), role: 'user', text };
                 setMessages(prev => [...prev, userMsg]);
                 setIsProcessing(true);
+                setErrorHeader(null);
 
                 try {
-                    const history = messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] }));
-                    const res = await chatWithAI(text, history);
+                    const history = messages.map(m => ({ 
+                        role: m.role === 'user' ? 'user' : 'model', 
+                        parts: [{ text: m.text }] 
+                    }));
                     
-                    const assistantMsg = { id: (Date.now()+1).toString(), role: 'assistant', text: res.text, displayText: res.display };
+                    const response = await ai.models.generateContent({
+                        model: "gemini-1.5-flash",
+                        contents: [...history, { role: 'user', parts: [{ text }] }],
+                        config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: "application/json" }
+                    });
+                    
+                    const res = JSON.parse(response.candidates[0].content.parts[0].text);
+                    
+                    const assistantMsg = { 
+                        id: (Date.now()+1).toString(), 
+                        role: 'assistant', 
+                        text: res.text, 
+                        displayText: res.display,
+                        suggestions: res.suggestions || []
+                    };
+                    
                     setMessages(prev => [...prev, assistantMsg]);
-                    setCurrentFeedback({ correction: res.feedback, newWords: res.vocabulary || [], suggestions: res.suggestions || [] });
+                    setCurrentFeedback({ 
+                        correction: res.feedback, 
+                        newWords: res.vocabulary || [], 
+                        suggestions: res.suggestions || [] 
+                    });
                     speak(res.text);
-                } catch (e) { console.error(e); }
-                finally { setIsProcessing(false); }
+                } catch (e) { 
+                    setErrorHeader("AI Connection Error. Please check your API Key.");
+                    console.error(e); 
+                } finally { setIsProcessing(false); }
             };
 
-            const startMic = () => {
-                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.lang = 'en-US';
-                recognition.onstart = () => setIsListening(true);
-                recognition.onresult = (e) => setTranscript(e.results[0][0].transcript);
-                recognition.onend = () => {
-                    setIsListening(false);
-                    if (transcript) handleUserAction(transcript);
-                };
-                recognition.start();
+            const toggleMic = () => {
+                if (isListening) {
+                    recognitionRef.current?.stop();
+                    return;
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    setErrorHeader("Trình duyệt không hỗ trợ nhận diện giọng nói. Hãy dùng Safari trên iPhone.");
+                    return;
+                }
+
+                if (!recognitionRef.current) {
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = true;
+                    recognitionRef.current.interimResults = true;
+                    recognitionRef.current.lang = 'en-US';
+
+                    recognitionRef.current.onresult = (e) => {
+                        let current = '';
+                        for (let i = e.resultIndex; i < e.results.length; ++i) {
+                            current += e.results[i][0].transcript;
+                        }
+                        setTranscript(current);
+                        transcriptRef.current = current;
+                    };
+
+                    recognitionRef.current.onerror = (e) => {
+                        setErrorHeader(`Error: ${e.error}`);
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onend = () => {
+                        setIsListening(false);
+                        if (transcriptRef.current.trim()) {
+                            handleUserAction(transcriptRef.current);
+                        }
+                    };
+                }
+
+                setTranscript('');
+                transcriptRef.current = '';
+                try {
+                    recognitionRef.current.start();
+                    setIsListening(true);
+                } catch (e) {
+                    setErrorHeader("Could not access microphone.");
+                }
             };
 
             return (
-                <div className="min-h-screen flex flex-col">
-                    <header className="p-4 bg-white border-b flex justify-between items-center sticky top-0">
-                        <div className="flex items-center gap-2">
-                            <div className="bg-orange-500 p-2 rounded-lg"><i data-lucide="languages" className="text-white w-5 h-5"></i></div>
-                            <h1 className="font-bold">AI English Tutor</h1>
+                <div className="min-h-screen flex flex-col pb-32">
+                    <header className="p-4 bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
+                        <div className="max-w-4xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-orange-500 p-2 rounded-xl shadow-lg shadow-orange-200">
+                                    <i data-lucide="languages" className="text-white w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-lg">AI Voice Tutor</h1>
+                                    <p className="text-[10px] uppercase tracking-widest text-gray-400">Beginner English</p>
+                                </div>
+                            </div>
                         </div>
+                        {errorHeader && (
+                            <div className="max-w-4xl mx-auto mt-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs border border-red-100 flex items-center gap-2">
+                                <i data-lucide="alert-circle" className="w-4 h-4"></i> {errorHeader}
+                            </div>
+                        )}
                     </header>
 
                     <main className="flex-1 max-w-4xl mx-auto w-full p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
-                        <div className="md:col-span-8 space-y-4">
+                        <div className="md:col-span-8 space-y-6">
                             {messages.map(m => (
-                                <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`p-4 rounded-2xl max-w-[80%] ${m.role === 'user' ? 'bg-orange-500 text-white rounded-tr-sm' : 'bg-white border rounded-tl-sm'}`}>
-                                        <p className="font-medium">{m.text}</p>
-                                        {m.displayText && <p className="text-sm mt-2 opacity-70 border-t pt-2">{m.displayText}</p>}
+                                <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                    <div className={`p-4 rounded-3xl shadow-sm max-w-[85%] ${m.role === 'user' ? 'bg-orange-500 text-white rounded-tr-sm' : 'bg-white border border-gray-100 rounded-tl-sm'}`}>
+                                        <p className="text-base font-medium leading-relaxed">{m.text}</p>
+                                        {m.displayText && m.displayText !== m.text && (
+                                            <p className="text-sm mt-2 opacity-70 border-t border-gray-100/20 pt-2">{m.displayText}</p>
+                                        )}
                                     </div>
                                 </div>
                             ))}
-                            {isProcessing && <div className="text-gray-400 text-xs animate-pulse italic">AI is thinking...</div>}
+                            {isProcessing && (
+                                <div className="flex gap-1">
+                                    <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"></div>
+                                    <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.2s]"></div>
+                                    <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.4s]"></div>
+                                </div>
+                            )}
                             <div ref={scrollRef} />
                         </div>
 
-                        <div className="md:col-span-4 space-y-6">
+                        <div className="md:col-span-4 space-y-6 sticky top-24 h-fit">
                             {currentFeedback.suggestions.length > 0 && (
-                                <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
-                                    <h3 className="text-xs font-bold text-orange-600 mb-3 uppercase">Try saying...</h3>
+                                <div className="bg-orange-50 p-5 rounded-3xl border border-orange-100">
+                                    <h3 className="text-[10px] font-bold text-orange-600 mb-4 uppercase tracking-widest flex items-center gap-2">
+                                        <i data-lucide="sparkles" className="w-3 h-3"></i> Try saying...
+                                    </h3>
                                     <div className="space-y-2">
                                         {currentFeedback.suggestions.map((s, i) => (
-                                            <button key={i} onClick={() => handleUserAction(s)} className="w-full text-left text-xs bg-white p-2 rounded-lg border hover:bg-orange-100 transition-colors uppercase">{s}</button>
+                                            <button key={i} onClick={() => handleUserAction(s)} disabled={isProcessing} className="w-full text-left text-xs bg-white p-3 rounded-xl border border-orange-100 hover:bg-orange-100 transition-all font-medium text-orange-800 disabled:opacity-50">
+                                                {s}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
                             )}
+
                             {currentFeedback.correction && (
-                                <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 text-sm">
-                                    <h3 className="font-bold text-amber-700 mb-1">Tip:</h3>
-                                    <p className="text-amber-800">{currentFeedback.correction}</p>
+                                <div className="bg-amber-50 p-5 rounded-3xl border border-amber-100">
+                                    <h3 className="text-[10px] font-bold text-amber-600 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                        <i data-lucide="info" className="w-3 h-3"></i> Correction
+                                    </h3>
+                                    <p className="text-sm text-amber-900 leading-relaxed">{currentFeedback.correction}</p>
+                                </div>
+                            )}
+
+                            {currentFeedback.newWords.length > 0 && (
+                                <div className="space-y-3">
+                                    <h3 className="text-[10px] font-bold text-gray-400 px-2 uppercase tracking-widest">Vocabulary</h3>
+                                    {currentFeedback.newWords.map((v, i) => (
+                                        <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                                            <p className="font-bold text-orange-500">{v.word}</p>
+                                            <p className="text-xs text-gray-500 italic">{v.meaning}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
                     </main>
 
-                    <div className="fixed bottom-6 left-0 right-0 flex justify-center p-4">
-                        <button onClick={isListening ? () => {} : startMic} 
-                                className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all ${isListening ? 'bg-red-500 scale-110' : 'bg-orange-500'}`}>
-                            <i data-lucide={isListening ? 'mic-off' : 'mic'} className="text-white w-8 h-8"></i>
-                        </button>
+                    <div className="fixed bottom-8 left-0 right-0 flex justify-center z-50 px-6">
+                        <div className="bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[40px] shadow-2xl p-4 flex items-center gap-6 w-full md:w-auto min-w-[300px]">
+                            <div className="flex-1 px-4 overflow-hidden">
+                                {isListening ? (
+                                    <span className="text-sm text-gray-500 italic animate-pulse truncate block">{transcript || "Listening..."}</span>
+                                ) : (
+                                    <span className="text-sm text-gray-400">Tap mic and speak...</span>
+                                )}
+                            </div>
+                            <button onClick={toggleMic} className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-xl ${isListening ? 'bg-red-500 shadow-red-200' : 'bg-orange-500 shadow-orange-200'}`}>
+                                <i data-lucide={isListening ? 'mic-off' : 'mic'} className="text-white w-7 h-7"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
