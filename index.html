@@ -1,500 +1,650 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>AI English Tutor - Gemini</title>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{
-  --or:#e8541e; --or2:#ff6b35; --or-lt:#fff0eb; --or-bd:#ffd5c2; --or-dk:#bf3d0e;
-  --bg:#faf9f7; --sur:#ffffff; --bd:#f0ede8;
-  --tx:#1a1512; --tx2:#8a7d74;
-  --ai:#f5f3f0;
-  --sp-bot:env(safe-area-inset-bottom,0px);
-  --sp-top:env(safe-area-inset-top,0px);
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:100dvh;overflow:hidden;color:var(--tx);}
-#setup{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:20px;}
-.setup-logo{width:72px;height:72px;border-radius:24px;background:var(--or);display:flex;align-items:center;justify-content:center;}
-.setup-logo svg{stroke:#fff;}
-.setup-title{font-size:22px;font-weight:800;color:var(--tx);text-align:center;letter-spacing:-0.5px;}
-.setup-sub{font-size:14px;color:var(--tx2);text-align:center;line-height:1.6;max-width:320px;}
-.setup-card{width:100%;max-width:360px;background:var(--sur);border:1px solid var(--bd);border-radius:20px;padding:20px;}
-.setup-label{font-size:12px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
-.setup-input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--or-bd);background:var(--or-lt);font-family:'Nunito',sans-serif;font-size:15px;color:var(--tx);outline:none;letter-spacing:1px;}
-.setup-input:focus{border-color:var(--or);}
-.setup-hint{font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5;}
-.setup-hint a{color:var(--or);text-decoration:none;font-weight:700;}
-.btn-start{width:100%;max-width:360px;padding:14px;border-radius:14px;border:none;background:var(--or);color:#fff;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:-0.3px;box-shadow:0 8px 24px rgba(232,84,30,0.35);}
-.btn-start:active{transform:scale(0.98);}
-.setup-err{color:#dc2626;font-size:12px;text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;width:100%;max-width:360px;margin-top:8px;}
-.setup-success{color:#16a34a;background:#f0fdf4;border-color:#bbf7d0;}
-#app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:var(--sur);box-shadow:0 0 60px rgba(0,0,0,0.08);}
-.hd{background:var(--or);padding:14px 18px;padding-top:max(14px,var(--sp-top));border-radius:0 0 22px 22px;box-shadow:0 6px 24px rgba(232,84,30,0.35);flex-shrink:0;}
-.hd-in{display:flex;align-items:center;justify-content:space-between;}
-.hd-l{display:flex;align-items:center;gap:10px;}
-.hd-av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;}
-.hd-av svg{stroke:#fff;}
-.hd-t{color:#fff;font-weight:800;font-size:15px;line-height:1;}
-.hd-s{color:rgba(255,255,255,0.72);font-size:11px;margin-top:2px;}
-.hd-btns{display:flex;gap:8px;}
-.hd-btn{background:rgba(255,255,255,0.18);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;}
-.hd-btn:active{background:rgba(255,255,255,0.32);}
-.chat{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 12px;display:flex;flex-direction:column;gap:12px;}
-.chat::-webkit-scrollbar{width:3px;}
-.chat::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px;}
-.row{display:flex;}
-.row.ai{justify-content:flex-start;}.row.user{justify-content:flex-end;}
-.bub{max-width:83%;padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.55;}
-.bub.ai{background:var(--ai);border-radius:4px 18px 18px 18px;color:var(--tx);}
-.bub.user{background:linear-gradient(135deg,var(--or2),var(--or));border-radius:18px 4px 18px 18px;color:#fff;box-shadow:0 4px 14px rgba(232,84,30,0.3);}
-.bub-en{font-weight:600;}
-.bub-vi{font-size:12px;color:var(--tx2);margin-top:5px;padding-top:5px;border-top:1px solid rgba(0,0,0,0.07);font-style:italic;}
-.bub.user .bub-vi{color:rgba(255,255,255,0.65);border-top-color:rgba(255,255,255,0.2);}
-.bub-tip{margin-top:7px;font-size:11px;color:#2563eb;background:#eff6ff;padding:5px 9px;border-radius:9px;line-height:1.5;}
-.bub-hd{display:flex;align-items:flex-start;gap:5px;}
-.btn-spk{background:none;border:none;cursor:pointer;color:var(--or);padding:1px;flex-shrink:0;opacity:0.7;}
-.btn-spk:active{opacity:1;}
-.ld-row{display:flex;}.ld-bub{background:var(--ai);border-radius:4px 18px 18px 18px;padding:14px 18px;display:flex;gap:5px;align-items:center;}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--or);animation:db 1.2s ease-in-out infinite;}
-.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
-@keyframes db{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
-.err-box{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:12px;padding:9px 13px;font-size:12px;line-height:1.5;}
-.ft{background:var(--sur);border-top:1.5px solid var(--bd);border-radius:22px 22px 0 0;padding:11px 14px;padding-bottom:max(18px,var(--sp-bot));box-shadow:0 -4px 20px rgba(0,0,0,0.05);flex-shrink:0;}
-.suggs{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;}
-.suggs::-webkit-scrollbar{display:none;}
-.sg{white-space:nowrap;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 13px;background:var(--or-lt);color:var(--or-dk);border:1.5px solid var(--or-bd);border-radius:20px;cursor:pointer;flex-shrink:0;}
-.sg:active{background:var(--or-bd);}.sg:disabled{opacity:.4;cursor:default;}
-.inp-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
-.txt-in{flex:1;padding:11px 15px;border-radius:22px;border:1.5px solid var(--or-bd);background:var(--or-lt);font-family:'Nunito',sans-serif;font-size:16px;color:var(--tx);outline:none;-webkit-appearance:none;}
-.txt-in:focus{border-color:var(--or);}
-.txt-in::placeholder{color:#c4a99a;}
-.btn-snd{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--or);color:#fff;box-shadow:0 4px 24px rgba(232,84,30,0.35);}
-.btn-snd:disabled{background:#e5e7eb;box-shadow:none;cursor:default;}
-.btn-snd:active:not(:disabled){transform:scale(0.92);}
-.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;}
-.btn-mic{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--or2),var(--or));box-shadow:0 8px 24px rgba(232,84,30,0.38);position:relative;transition:all .2s;}
-.btn-mic.rec{background:linear-gradient(135deg,#f87171,#ef4444);box-shadow:0 8px 24px rgba(239,68,68,0.42);transform:scale(1.07);}
-.btn-mic.rec::before{content:'';position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(239,68,68,0.35);animation:mr 1.1s ease-out infinite;}
-@keyframes mr{0%{transform:scale(1);opacity:.8;}100%{transform:scale(1.5);opacity:0;}}
-.mic-lbl{font-size:11px;font-weight:700;color:var(--tx2);}
-.mic-lbl.act{color:#ef4444;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI English Tutor | Voice Learning</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: #f7f9fc;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        /* Main App Container */
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            background: #1a1a2e;
+            color: white;
+            padding: 20px 24px;
+            border-bottom: 1px solid #2a2a40;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .header p {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        /* API Key Overlay */
+        .api-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .api-card {
+            background: white;
+            border-radius: 28px;
+            padding: 28px;
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.2);
+        }
+
+        .api-card h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1a1a2e;
+        }
+
+        .api-card p {
+            font-size: 0.8rem;
+            color: #5a5a6e;
+            margin-bottom: 20px;
+        }
+
+        .api-card input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .api-card input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+        }
+
+        .api-card button {
+            width: 100%;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .api-card button:active {
+            transform: scale(0.97);
+        }
+
+        .error-msg {
+            color: #dc2626;
+            font-size: 0.75rem;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        /* Message Bubbles */
+        .message {
+            display: flex;
+            width: 100%;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .bubble {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 24px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .user .bubble {
+            background: #1a1a2e;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .ai .bubble {
+            background: #f1f5f9;
+            color: #1e293b;
+            border-bottom-left-radius: 6px;
+        }
+
+        .timestamp {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            opacity: 0.6;
+            text-align: right;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 18px;
+            background: #f1f5f9;
+            border-radius: 24px;
+            width: fit-content;
+            border-bottom-left-radius: 6px;
+        }
+
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: pulse 1.2s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes pulse {
+            0%, 60%, 100% { transform: scale(0.8); opacity: 0.5; }
+            30% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* Input Footer */
+        .input-footer {
+            padding: 16px 20px 24px;
+            background: white;
+            border-top: 1px solid #edf2f7;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-footer input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            outline: none;
+            background: #f8fafc;
+        }
+
+        .input-footer input:focus {
+            border-color: #3b82f6;
+            background: white;
+        }
+
+        .mic-btn, .send-btn {
+            background: #1a1a2e;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+        }
+
+        .mic-btn:active, .send-btn:active {
+            transform: scale(0.94);
+        }
+
+        .mic-btn.recording {
+            background: #dc2626;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+            100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            transform: none;
+        }
+
+        /* Scrollbar */
+        .chat-area::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-area::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
 
-<div id="setup">
-  <div class="setup-logo">
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
-    </svg>
-  </div>
-  <div class="setup-title">AI English Tutor</div>
-  <div class="setup-sub">Nhập Gemini API Key để bắt đầu. Key được lưu trên máy bạn, không gửi đi đâu khác.</div>
-  <div class="setup-card">
-    <div class="setup-label">Gemini API Key</div>
-    <input class="setup-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
-    <div class="setup-hint">
-      Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a><br>
-      <span style="font-size:10px;">✅ Sau khi lấy key, cần bật "Generative Language API" trong Google Cloud Console (miễn phí).</span>
+<div class="app-container" id="app">
+    <div class="header">
+        <h1>AI English Tutor</h1>
+        <p>Your personal speaking coach • Voice enabled</p>
     </div>
-  </div>
-  <div id="setupErr" class="setup-err" style="display:none;"></div>
-  <button class="btn-start" onclick="validateAndStart()" id="startBtn">Bắt đầu luyện tập →</button>
-</div>
 
-<div id="app" style="display:none;">
-  <div class="hd">
-    <div class="hd-in">
-      <div class="hd-l">
-        <div class="hd-av">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+    <!-- API Key Modal -->
+    <div class="api-overlay" id="apiOverlay">
+        <div class="api-card">
+            <h3>✨ Welcome</h3>
+            <p>Enter your Gemini API Key to start speaking English.</p>
+            <input type="password" id="apiKeyInput" placeholder="AIzaSy..." autocomplete="off">
+            <button id="saveKeyBtn">Start Session →</button>
+            <div id="apiError" class="error-msg"></div>
+            <div style="font-size: 0.7rem; text-align: center; margin-top: 16px; color:#666;">
+                <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#3b82f6;">Get your free API key here</a>
+            </div>
         </div>
-        <div>
-          <div class="hd-t">AI English Tutor</div>
-          <div class="hd-s">Luyện tiếng Anh cùng AI</div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-area" id="chatArea">
+        <div class="message ai">
+            <div class="bubble">👋 Hello! I'm your AI English Tutor. Let's practice English together. How are you today?</div>
         </div>
-      </div>
-      <div class="hd-btns">
-        <button class="hd-btn" onclick="resetChat()" title="Cuộc trò chuyện mới">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        </button>
-        <button class="hd-btn" onclick="logout()" title="Đổi API Key">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
-      </div>
     </div>
-  </div>
 
-  <div class="chat" id="chat"></div>
-
-  <div class="ft">
-    <div class="suggs" id="suggs"></div>
-    <div class="inp-row">
-      <input class="txt-in" id="txtin" type="text" placeholder="Gõ tiếng Anh ở đây..." autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="btn-snd" id="sndbtn" disabled onclick="sendFromInput()">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
+    <!-- Input Area -->
+    <div class="input-footer">
+        <input type="text" id="textInput" placeholder="Type your message..." autocomplete="off">
+        <button class="mic-btn" id="micBtn" aria-label="Voice Input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+        </button>
+        <button class="send-btn" id="sendBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
     </div>
-    <div class="mic-wrap">
-      <button class="btn-mic" id="micbtn" onclick="toggleMic()">
-        <svg id="micsvg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-      </button>
-      <span class="mic-lbl" id="miclbl">Nhấn để nói</span>
-    </div>
-  </div>
 </div>
 
 <script>
-// ==================== DANH SÁCH MODEL CHUẨN & CẬP NHẬT ====================
-// Các model ổn định trong gói miễn phí 2026
-const FALLBACK_MODELS = [
-  'gemini-2.5-flash',          // Model ổn định, hiệu năng cao cho free tier (500 req/day)
-  'gemini-2.5-flash-lite',     // Model tiết kiệm, throughput cao
-  'gemini-2.0-flash-lite'      // Model cũ nhưng vẫn được hỗ trợ cho một số tài khoản
-];
-const KEY_STORE = 'tutor_gemini_key';
+    // ---------- DOM Elements ----------
+    const apiOverlay = document.getElementById('apiOverlay');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const apiError = document.getElementById('apiError');
+    const chatArea = document.getElementById('chatArea');
+    const textInput = document.getElementById('textInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const micBtn = document.getElementById('micBtn');
 
-let API_KEY = '';
-let busy = false, recording = false, spkUnlock = false, rec = null, mid = 0;
-let suggs = ["I'm fine, thanks!", "Not bad, and you?"];
-let currentModel = null;        // Lưu model đang hoạt động
+    // ---------- App State ----------
+    let API_KEY = '';
+    let isProcessing = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
 
-const chatEl = document.getElementById('chat');
-const suggsEl = document.getElementById('suggs');
-const inp = document.getElementById('txtin');
-const sndBtn = document.getElementById('sndbtn');
-const micBtn = document.getElementById('micbtn');
-const micLbl = document.getElementById('miclbl');
+    // Speech Synthesis for AI voice
+    let synth = window.speechSynthesis;
+    let currentUtterance = null;
 
-// ==================== KIỂM TRA KEY VÀ TÌM MODEL KHẢ DỤNG ====================
-async function validateAndStart() {
-  const key = document.getElementById('keyInput').value.trim();
-  if (!key.startsWith('AIza') || key.length < 30) {
-    showSetupErr('Key không hợp lệ. Key Gemini bắt đầu bằng "AIza..." và dài >30 ký tự.');
-    return;
-  }
-  
-  const btn = document.getElementById('startBtn');
-  const originalText = btn.textContent;
-  btn.textContent = 'Đang kiểm tra key...';
-  btn.disabled = true;
-  
-  try {
-    // Bước 1: Gọi API list models để xem tài khoản được phép dùng model nào
-    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
-    const listRes = await fetch(listUrl);
-    
-    if (!listRes.ok) {
-      if (listRes.status === 403 || listRes.status === 401) {
-        throw new Error('API key không hợp lệ hoặc chưa được bật API.');
-      }
-      throw new Error(`Không thể lấy danh sách model (HTTP ${listRes.status})`);
-    }
-    
-    const listData = await listRes.json();
-    const availableModels = listData.models || [];
-    
-    // Lọc ra các model hỗ trợ generateContent (text generation)
-    const validModels = availableModels.filter(m => 
-      m.supportedGenerationMethods?.includes('generateContent') &&
-      (m.name.includes('flash') || m.name.includes('pro')) // Ưu tiên model chat
-    ).map(m => m.name);
-    
-    if (validModels.length === 0) {
-      // Fallback: thử danh sách có sẵn
-      console.warn('Không tìm thấy model nào từ API list, thử danh sách mặc định');
-      for (const model of FALLBACK_MODELS) {
-        if (await testModel(key, model)) {
-          currentModel = model;
-          break;
+    // ---------- Helper Functions ----------
+    function saveApiKey() {
+        const key = apiKeyInput.value.trim();
+        if (!key || !key.startsWith('AIza')) {
+            apiError.textContent = '❌ Invalid API Key. Must start with "AIza".';
+            return;
         }
-      }
-    } else {
-      // Chọn model flash ổn định nhất
-      currentModel = validModels.find(m => m.includes('2.5-flash')) || 
-                     validModels.find(m => m.includes('flash')) || 
-                     validModels[0];
+        API_KEY = key;
+        localStorage.setItem('gemini_api_key', key);
+        apiOverlay.style.display = 'none';
+        apiError.textContent = '';
+        // Add welcome message from AI after setup
+        addAIMessage("👋 Hello! I'm your AI English Tutor. Let's practice English together. How are you today?");
     }
-    
-    if (!currentModel) {
-      throw new Error('Không tìm thấy model nào khả dụng cho tài khoản của bạn. Hãy thử tạo API key mới.');
+
+    function loadStoredKey() {
+        const stored = localStorage.getItem('gemini_api_key');
+        if (stored && stored.startsWith('AIza')) {
+            API_KEY = stored;
+            apiOverlay.style.display = 'none';
+            apiKeyInput.value = stored;
+        } else {
+            apiOverlay.style.display = 'flex';
+        }
     }
-    
-    // Xác nhận model cuối cùng hoạt động
-    if (!await testModel(key, currentModel)) {
-      throw new Error(`Model ${currentModel} không khả dụng.`);
+
+    function addUserMessage(text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message user';
+        messageDiv.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+        chatArea.appendChild(messageDiv);
+        scrollToBottom();
     }
-    
-    // Mọi thứ OK
-    API_KEY = key;
-    localStorage.setItem(KEY_STORE, key);
-    document.getElementById('setup').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    initChat();
-    
-  } catch (err) {
-    showSetupErr(err.message);
-    btn.textContent = originalText;
-    btn.disabled = false;
-  }
+
+    function addAIMessage(text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ai';
+        messageDiv.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+        chatArea.appendChild(messageDiv);
+        scrollToBottom();
+        speakText(text);
+    }
+
+    function addTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message ai';
+        typingDiv.id = 'typingIndicator';
+        typingDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+        chatArea.appendChild(typingDiv);
+        scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    function scrollToBottom() {
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // ---------- Text-to-Speech ----------
+    function speakText(text) {
+        if (!synth) return;
+        if (currentUtterance) synth.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        utterance.volume = 1;
+        currentUtterance = utterance;
+        synth.speak(utterance);
+    }
+
+    // ---------- Gemini API Call ----------
+    async function callGemini(userMessage) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
+
+        // Enhanced prompt to ensure JSON output for structured responses
+        const prompt = `You are a friendly, patient, and highly effective English tutor for Vietnamese learners. Your goal is to help the user improve their English speaking and writing skills through natural conversation.
+
+**IMPORTANT RULES:**
+1. Keep your response SHORT and CONVERSATIONAL (1-3 sentences maximum).
+2. You MUST respond with a valid JSON object ONLY. No markdown, no code blocks, no extra text outside the JSON.
+3. The JSON must have this exact structure:
+{
+  "reply": "Your English response to the user here. Keep it natural and helpful.",
+  "correction": "If the user made a grammar mistake, provide the corrected version of their sentence. If no mistake, leave empty string.",
+  "tip": "A very brief grammar or vocabulary tip (max 10 words) based on the conversation."
 }
 
-// Hàm test thử một model có hoạt động không
-async function testModel(key, modelName) {
-  try {
-    const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
-    const testRes = await fetch(testEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: "Say 'OK' in one word." }] }],
-        generationConfig: { maxOutputTokens: 5 }
-      })
+**Example:**
+User: "I go to school yesterday."
+Response: {"reply": "I see! Do you mean you went to school yesterday?", "correction": "I went to school yesterday.", "tip": "Use 'went' for past tense."}
+
+User: "I'm fine, thank you."
+Response: {"reply": "That's great to hear! What are you planning to do today?", "correction": "", "tip": "Great use of polite English!"}
+
+User: "${userMessage}"
+`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 200,
+                        responseMimeType: "application/json"
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('API Error:', errorData);
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error('Invalid API Key. Please check your key and try again.');
+                }
+                if (response.status === 429) {
+                    throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+                }
+                throw new Error(errorData.error?.message || 'API request failed');
+            }
+
+            const data = await response.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            
+            // Try to parse JSON from response
+            let jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('Invalid response format from AI');
+            }
+            
+            const parsed = JSON.parse(jsonMatch[0]);
+            let finalReply = parsed.reply || "I'm here to help you practice English!";
+            
+            // Add correction if provided
+            if (parsed.correction && parsed.correction.trim() !== "") {
+                finalReply += `\n\n💡 Correction: ${parsed.correction}`;
+            }
+            
+            // Add tip if provided
+            if (parsed.tip && parsed.tip.trim() !== "") {
+                finalReply += `\n\n📚 Tip: ${parsed.tip}`;
+            }
+            
+            return finalReply;
+        } catch (error) {
+            console.error('Gemini API Error:', error);
+            throw error;
+        }
+    }
+
+    // ---------- Send Message Flow ----------
+    async function sendMessage(message) {
+        if (!message.trim() || isProcessing) return;
+        if (!API_KEY) {
+            apiOverlay.style.display = 'flex';
+            return;
+        }
+
+        isProcessing = true;
+        addUserMessage(message);
+        textInput.value = '';
+        addTypingIndicator();
+
+        try {
+            const aiReply = await callGemini(message);
+            removeTypingIndicator();
+            addAIMessage(aiReply);
+        } catch (error) {
+            removeTypingIndicator();
+            let errorMsg = error.message;
+            if (errorMsg.includes('API Key')) {
+                errorMsg = '⚠️ API Key issue. Please re-enter your key.';
+                apiOverlay.style.display = 'flex';
+            } else if (errorMsg.includes('Rate limit')) {
+                errorMsg = '⏳ Too many requests. Please wait a few seconds.';
+            } else {
+                errorMsg = '❌ Connection error. Please check your internet.';
+            }
+            addAIMessage(errorMsg);
+            console.error('Send message error:', error);
+        } finally {
+            isProcessing = false;
+        }
+    }
+
+    // ---------- Voice Recording using MediaRecorder (More stable) ----------
+    async function startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                // Stop all tracks
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Convert to base64 for Whisper-like transcription (using Web Speech API as fallback)
+                // For simplicity and compatibility, we'll use the Web Speech API for transcription
+                // This avoids needing an extra API key for Whisper
+                transcribeAudio(audioBlob);
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.classList.add('recording');
+            micBtn.style.background = '#dc2626';
+        } catch (err) {
+            console.error('Microphone error:', err);
+            alert('Cannot access microphone. Please check permissions.');
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            micBtn.style.background = '#1a1a2e';
+        }
+    }
+
+    function transcribeAudio(audioBlob) {
+        // Use Web Speech API for transcription (works well on mobile)
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.start();
+        
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript && transcript.trim()) {
+                sendMessage(transcript);
+            } else {
+                addAIMessage("I couldn't hear you clearly. Could you please type or try speaking again?");
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            addAIMessage("Sorry, I had trouble hearing you. Please type your message or check your microphone.");
+        };
+    }
+
+    function toggleRecording() {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    }
+
+    // ---------- Event Listeners ----------
+    saveKeyBtn.addEventListener('click', saveApiKey);
+    sendBtn.addEventListener('click', () => sendMessage(textInput.value));
+    micBtn.addEventListener('click', toggleRecording);
+    
+    textInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(textInput.value);
+        }
     });
-    return testRes.ok;
-  } catch {
-    return false;
-  }
-}
 
-function showSetupErr(msg) {
-  const el = document.getElementById('setupErr');
-  el.textContent = msg;
-  el.style.display = 'block';
-  setTimeout(() => {
-    if (el.style.display === 'block') el.style.display = 'none';
-  }, 8000);
-}
+    // Initialize on page load
+    loadStoredKey();
 
-function logout() {
-  window.speechSynthesis?.cancel(); stopMic();
-  localStorage.removeItem(KEY_STORE);
-  API_KEY = '';
-  currentModel = null;
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('setup').style.display = 'flex';
-  document.getElementById('keyInput').value = '';
-  document.getElementById('setupErr').style.display = 'none';
-}
-
-// Tự động đăng nhập nếu đã lưu key
-window.addEventListener('DOMContentLoaded', async () => {
-  const saved = localStorage.getItem(KEY_STORE);
-  if (saved) {
-    API_KEY = saved;
-    document.getElementById('keyInput').value = saved;
-    // Thử tìm model nhanh
-    try {
-      const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${saved}`;
-      const listRes = await fetch(listUrl);
-      if (listRes.ok) {
-        const listData = await listRes.json();
-        const availableModels = listData.models || [];
-        const validModels = availableModels.filter(m => 
-          m.supportedGenerationMethods?.includes('generateContent') &&
-          (m.name.includes('flash') || m.name.includes('pro'))
-        ).map(m => m.name);
-        currentModel = validModels.find(m => m.includes('2.5-flash')) || 
-                       validModels.find(m => m.includes('flash')) || 
-                       validModels[0];
-        if (currentModel && await testModel(saved, currentModel)) {
-          document.getElementById('setup').style.display = 'none';
-          document.getElementById('app').style.display = 'flex';
-          initChat();
-          return;
-        }
-      }
-    } catch(e) { /* key cũ không dùng được */ }
-    localStorage.removeItem(KEY_STORE);
-    API_KEY = '';
-    currentModel = null;
-    document.getElementById('keyInput').value = '';
-    showSetupErr('Key đã lưu không còn hiệu lực. Vui lòng nhập key mới.');
-  }
-  document.getElementById('keyInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') validateAndStart();
-  });
-});
-
-// ==================== CHAT INIT ====================
-function initChat() {
-  chatEl.innerHTML = ''; mid = 0; busy = false; spkUnlock = false;
-  suggs = ["I'm fine, thanks!", "Not bad, and you?"];
-  addMsg('ai', {
-    en: "Hello! I'm your AI English tutor. Let's practice! How are you today?",
-    vi: "Xin chào! Tôi là gia sư AI của bạn. Hôm nay bạn thế nào?"
-  });
-  renderSuggs(suggs);
-  inp.addEventListener('input', () => { sndBtn.disabled = !inp.value.trim() || busy; });
-  inp.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendFromInput(); } });
-  inp.addEventListener('focus', unlockSpk);
-}
-
-function unlockSpk() {
-  if (spkUnlock || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(''); u.volume = 0;
-  window.speechSynthesis.speak(u);
-  spkUnlock = true;
-}
-
-function speakTxt(t) {
-  if (!t || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  setTimeout(() => {
-    const u = new SpeechSynthesisUtterance(t);
-    u.lang='en-US'; u.rate=0.85;
-    window.speechSynthesis.speak(u);
-  }, 120);
-}
-
-// ==================== GEMINI CALL ====================
-async function callGemini(userMsg) {
-  if (!currentModel) {
-    throw new Error('Chưa xác định được model khả dụng. Hãy thử logout và đăng nhập lại.');
-  }
-  
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${API_KEY}`;
-  
-  const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
-Return ONLY a raw JSON object, no markdown, no code blocks, no extra text:
-{"en":"<English reply>","vi":"<Vietnamese translation>","tip":"<one grammar/vocab tip in Vietnamese, max 15 words>","sug":["<suggestion 1>","<suggestion 2>"]}
-Student: ${userMsg}`;
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
-    })
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    const errMsg = errData?.error?.message || `HTTP ${res.status}`;
-    if (res.status === 403 || res.status === 401) {
-      throw new Error('API key không hợp lệ hoặc chưa được bật API.');
+    // Optional: Pre-load speech synthesis to avoid delay on first speak
+    if (synth) {
+        // Dummy utterance to warm up the engine on some browsers
+        const dummy = new SpeechSynthesisUtterance('');
+        synth.speak(dummy);
     }
-    if (res.status === 429) throw new Error('Đã hết quota dùng thử. Vui lòng đợi hoặc dùng key khác.');
-    throw new Error(errMsg);
-  }
-
-  const data = await res.json();
-  let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('AI trả về sai định dạng JSON.');
-  return JSON.parse(match[0]);
-}
-
-// ==================== SEND MESSAGE ====================
-async function sendMsg(txt) {
-  const v = (txt || '').trim();
-  if (!v || busy) return;
-  unlockSpk();
-  inp.value = ''; sndBtn.disabled = true;
-  setBusy(true); removeErr();
-  addMsg('user', { en: v });
-  const lid = addLoading();
-  try {
-    const res = await callGemini(v);
-    removeEl(lid);
-    addMsg('ai', { en: res.en, vi: res.vi, tip: res.tip });
-    if (res.sug?.length) { suggs = res.sug; renderSuggs(suggs); }
-    speakTxt(res.en);
-  } catch(e) {
-    removeEl(lid);
-    let errorMsg = e.message;
-    if (errorMsg.includes('API key')) errorMsg = '🔑 API key không hợp lệ hoặc chưa bật API. Hãy logout và nhập key mới.';
-    else if (errorMsg.includes('quota')) errorMsg = '📉 Hết quota dùng thử Gemini. Bạn có thể đợi hoặc dùng key khác.';
-    else if (errorMsg.includes('network')) errorMsg = '📡 Lỗi mạng, kiểm tra kết nối.';
-    showErr(errorMsg);
-  } finally {
-    setBusy(false);
-  }
-}
-function sendFromInput() { sendMsg(inp.value); }
-
-// ==================== MICROPHONE ====================
-function toggleMic() {
-  unlockSpk();
-  if (recording) { stopMic(); return; }
-  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!R) { showErr('Trình duyệt không hỗ trợ nhận dạng giọng nói. Dùng Safari iOS 14.5+ hoặc Chrome.'); return; }
-  rec = new R();
-  rec.lang = 'en-US'; rec.continuous = false; rec.interimResults = false;
-  rec.onstart = () => {
-    recording = true; micBtn.classList.add('rec');
-    micLbl.textContent = 'Đang nghe...'; micLbl.classList.add('act');
-  };
-  rec.onresult = e => { sendMsg(e.results[0][0].transcript); };
-  rec.onerror = e => {
-    stopMic();
-    const m = {
-      'not-allowed': '🎤 Chưa cấp quyền mic. Vào Settings → Safari → Microphone → Allow.',
-      'no-speech':   '🎙️ Không nghe thấy giọng nói. Thử lại nhé!',
-      'network':     '📶 Lỗi mạng khi nhận dạng giọng nói.',
-      'audio-capture': '🔇 Không truy cập được microphone.'
-    };
-    if (e.error !== 'no-speech') showErr(m[e.error] || `Lỗi mic: ${e.error}`);
-  };
-  rec.onend = () => stopMic();
-  try { rec.start(); } catch(e) { showErr('Không khởi động mic: ' + e.message); }
-}
-function stopMic() {
-  recording = false; micBtn.classList.remove('rec');
-  micLbl.textContent = 'Nhấn để nói'; micLbl.classList.remove('act');
-  try { rec?.stop(); } catch(e) {}
-}
-
-// ==================== UI HELPERS ====================
-function addMsg(role, data) {
-  const id = 'm'+(++mid), div = document.createElement('div');
-  div.className = 'row '+role; div.id = id;
-  const spk = role==='ai'
-    ? `<button class="btn-spk" onclick="speakTxt(${JSON.stringify(data.en)})" title="Nghe lại">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-       </button>` : '';
-  const vi  = data.vi  ? `<div class="bub-vi">${esc(data.vi)}</div>`  : '';
-  const tip = data.tip ? `<div class="bub-tip">💡 ${esc(data.tip)}</div>` : '';
-  div.innerHTML = `<div class="bub ${role}"><div class="bub-hd"><span class="bub-en">${esc(data.en)}</span>${spk}</div>${vi}${tip}</div>`;
-  chatEl.appendChild(div); scroll(); return id;
-}
-function addLoading() {
-  const id='l'+(++mid), div=document.createElement('div');
-  div.className='ld-row'; div.id=id;
-  div.innerHTML=`<div class="ld-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  chatEl.appendChild(div); scroll(); return id;
-}
-function removeEl(id) { document.getElementById(id)?.remove(); }
-function showErr(msg) {
-  removeErr();
-  const d = document.createElement('div');
-  d.className='err-box'; d.id='errbox'; d.textContent='⚠️ '+msg;
-  chatEl.appendChild(d); scroll();
-}
-function removeErr() { document.getElementById('errbox')?.remove(); }
-function renderSuggs(list) {
-  suggsEl.innerHTML = '';
-  list.forEach(s => {
-    const b = document.createElement('button');
-    b.className='sg'; b.textContent=s; b.disabled=busy;
-    b.onclick = () => sendMsg(s);
-    suggsEl.appendChild(b);
-  });
-}
-function setBusy(v) {
-  busy=v;
-  document.querySelectorAll('.sg').forEach(b=>b.disabled=v);
-  if (!v) sndBtn.disabled = !inp.value.trim();
-}
-function scroll() { requestAnimationFrame(()=>{ chatEl.scrollTop=chatEl.scrollHeight; }); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function resetChat() { window.speechSynthesis?.cancel(); stopMic(); initChat(); }
 </script>
 </body>
 </html>
