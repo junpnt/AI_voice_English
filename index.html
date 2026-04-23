@@ -1,397 +1,383 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Voice Tutor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #fff8f5;
-            /* FIX iOS: dùng dvh thay vì vh để tránh lỗi address bar */
-            height: 100dvh;
-            overflow: hidden;
-            touch-action: manipulation;
-        }
-        #root { height: 100%; }
-        .app-shell {
-            display: flex;
-            flex-direction: column;
-            /* FIX iOS: dùng 100dvh */
-            height: 100dvh;
-            max-width: 480px;
-            margin: 0 auto;
-            background: #fff;
-        }
-        .chat-area {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        /* Tắt scrollbar nhưng vẫn scroll được */
-        .chat-area::-webkit-scrollbar { display: none; }
-        .no-sb::-webkit-scrollbar { display: none; }
-
-        /* Mic pulse animation */
-        @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 0.7; }
-            100% { transform: scale(1.5); opacity: 0; }
-        }
-        .mic-pulse::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: #ef4444;
-            animation: pulse-ring 1s ease-out infinite;
-        }
-        .mic-pulse { position: relative; }
-
-        /* FIX iOS: input không bị zoom khi focus */
-        input[type="text"] { font-size: 16px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>AI Voice Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #ff6b35;
+    --primary-dark: #e8541e;
+    --primary-light: #fff0eb;
+    --bg: #faf9f7;
+    --surface: #ffffff;
+    --border: #f0ede8;
+    --text: #1a1512;
+    --text-soft: #8a7d74;
+    --ai-bubble: #f5f3f0;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-primary: 0 8px 28px rgba(255,107,53,0.38);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Nunito', -apple-system, sans-serif;
+    background: var(--bg);
+    height: 100dvh;
+    overflow: hidden;
+    color: var(--text);
+  }
+  .shell {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--surface);
+    box-shadow: 0 0 60px rgba(0,0,0,0.08);
+  }
+  /* HEADER */
+  .header {
+    background: var(--primary);
+    padding: 14px 18px;
+    padding-top: max(14px, env(safe-area-inset-top));
+    border-radius: 0 0 24px 24px;
+    box-shadow: var(--shadow-primary);
+    flex-shrink: 0;
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-avatar { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .header-title { color: #fff; font-weight: 800; font-size: 16px; letter-spacing: -0.3px; line-height: 1; }
+  .header-sub { color: rgba(255,255,255,0.72); font-size: 11px; margin-top: 2px; font-weight: 600; }
+  .btn-reset { background: rgba(255,255,255,0.18); border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
+  .btn-reset:active { background: rgba(255,255,255,0.32); }
+  /* CHAT */
+  .chat { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 14px; display: flex; flex-direction: column; gap: 14px; }
+  .chat::-webkit-scrollbar { display: none; }
+  .row { display: flex; }
+  .row.ai { justify-content: flex-start; }
+  .row.user { justify-content: flex-end; }
+  .bubble { max-width: 82%; padding: 12px 15px; border-radius: 20px; box-shadow: var(--shadow-sm); line-height: 1.5; }
+  .bubble.ai { background: var(--ai-bubble); border-radius: 4px 20px 20px 20px; color: var(--text); }
+  .bubble.user { background: linear-gradient(135deg, #ff6b35, #e8541e); border-radius: 20px 4px 20px 20px; color: #fff; box-shadow: var(--shadow-primary); }
+  .bubble-en { font-size: 15px; font-weight: 600; }
+  .bubble-vi { font-size: 12px; color: var(--text-soft); margin-top: 5px; font-style: italic; padding-top: 5px; border-top: 1px solid rgba(0,0,0,0.07); }
+  .bubble.user .bubble-vi { color: rgba(255,255,255,0.65); border-top-color: rgba(255,255,255,0.2); }
+  .bubble-tip { margin-top: 8px; font-size: 11px; color: #2563eb; background: #eff6ff; padding: 6px 10px; border-radius: 10px; display: flex; gap: 5px; align-items: flex-start; line-height: 1.5; }
+  .bubble-head { display: flex; align-items: flex-start; gap: 6px; }
+  .btn-speak { background: none; border: none; cursor: pointer; color: var(--primary); padding: 2px; flex-shrink: 0; opacity: 0.7; }
+  .btn-speak:active { opacity: 1; }
+  /* Loading */
+  .loading-row { display: flex; justify-content: flex-start; }
+  .loading-bubble { background: var(--ai-bubble); border-radius: 4px 20px 20px 20px; padding: 14px 18px; display: flex; gap: 5px; align-items: center; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); animation: dotBounce 1.2s ease-in-out infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotBounce { 0%,100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-6px); opacity: 1; } }
+  .error-box { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 14px; padding: 10px 14px; font-size: 12px; line-height: 1.6; }
+  /* FOOTER */
+  .footer { background: var(--surface); border-top: 1.5px solid var(--border); border-radius: 24px 24px 0 0; padding: 12px 16px; padding-bottom: max(20px, var(--safe-bottom)); box-shadow: 0 -4px 24px rgba(0,0,0,0.06); flex-shrink: 0; }
+  .suggs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
+  .suggs::-webkit-scrollbar { display: none; }
+  .sugg-btn { white-space: nowrap; font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 700; padding: 7px 14px; background: var(--primary-light); color: var(--primary-dark); border: 1.5px solid #ffd5c2; border-radius: 20px; cursor: pointer; flex-shrink: 0; }
+  .sugg-btn:active { background: #ffe0d4; }
+  .sugg-btn:disabled { opacity: 0.45; cursor: default; }
+  .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .text-input { flex: 1; padding: 11px 16px; border-radius: 24px; border: 1.5px solid #ffd5c2; background: var(--primary-light); font-family: 'Nunito', sans-serif; font-size: 16px; color: var(--text); outline: none; -webkit-appearance: none; }
+  .text-input:focus { border-color: var(--primary); }
+  .text-input::placeholder { color: #c4a99a; }
+  .btn-send { width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--primary); box-shadow: var(--shadow-primary); color: #fff; }
+  .btn-send:disabled { background: #e5e7eb; box-shadow: none; cursor: default; }
+  .btn-send:active:not(:disabled) { transform: scale(0.92); }
+  .mic-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .btn-mic { width: 68px; height: 68px; border-radius: 50%; border: none; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; position: relative; background: linear-gradient(135deg, #ff6b35, #e8541e); box-shadow: var(--shadow-primary); transition: all 0.2s; }
+  .btn-mic.recording { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 8px 28px rgba(239,68,68,0.45); transform: scale(1.08); }
+  .btn-mic.recording::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(239,68,68,0.4); animation: micRing 1.2s ease-out infinite; }
+  @keyframes micRing { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
+  .mic-label { font-size: 11px; font-weight: 700; color: var(--text-soft); }
+  .mic-label.active { color: #ef4444; }
+</style>
 </head>
 <body>
-    <div id="root"></div>
+<div class="shell">
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-avatar">🎓</div>
+        <div>
+          <div class="header-title">AI TUTOR</div>
+          <div class="header-sub">Luyện tiếng Anh cùng AI</div>
+        </div>
+      </div>
+      <button class="btn-reset" onclick="resetApp()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+    </div>
+  </div>
 
-    <script type="text/babel">
-        // ⚠️ Lưu ý: Đặt API key trực tiếp trong HTML là không an toàn nếu public.
-        // Chỉ dùng cho localhost / nội bộ.
-        const API_KEY = "AIzaSyBMox0NFLIN1xZtPJbcqoT2YeCeFAoMh30";
+  <div class="chat" id="chat"></div>
 
-        const { useState, useEffect, useRef, useCallback } = React;
+  <div class="footer">
+    <div class="suggs" id="suggs"></div>
+    <div class="input-row">
+      <input class="text-input" id="textInput" type="text" placeholder="Gõ tiếng Anh ở đây..." autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn-send" id="sendBtn" disabled onclick="sendFromInput()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="mic-wrap">
+      <button class="btn-mic" id="micBtn" onclick="toggleMic()">
+        <svg id="micIconSvg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </button>
+      <span class="mic-label" id="micLabel">Nhấn để nói</span>
+    </div>
+  </div>
+</div>
 
-        // =============================================
-        // FIX 1: Unlock iOS Speech Synthesis
-        // iOS chỉ cho phép speak() trong user gesture.
-        // Gọi một utterance rỗng ngay khi user tap lần đầu.
-        // =============================================
-        let speechUnlocked = false;
-        function unlockSpeech() {
-            if (speechUnlocked) return;
-            const u = new SpeechSynthesisUtterance('');
-            u.volume = 0;
-            window.speechSynthesis.speak(u);
-            speechUnlocked = true;
-        }
+<script>
+// ── STATE ──
+let isLoading = false;
+let isRecording = false;
+let speechUnlocked = false;
+let recognition = null;
+let currentSuggs = ["I'm fine, thank you!", "Not bad, and you?"];
+let msgId = 0;
 
-        function speak(text) {
-            if (!text) return;
-            window.speechSynthesis.cancel();
-            // Delay nhỏ giúp iOS xử lý ổn định hơn
-            setTimeout(() => {
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'en-US';
-                u.rate = 0.85;
-                u.pitch = 1;
-                window.speechSynthesis.speak(u);
-            }, 100);
-        }
+// ── DOM ──
+const chatEl    = document.getElementById('chat');
+const suggsEl   = document.getElementById('suggs');
+const textInput = document.getElementById('textInput');
+const sendBtn   = document.getElementById('sendBtn');
+const micBtn    = document.getElementById('micBtn');
+const micLabel  = document.getElementById('micLabel');
 
-        // =============================================
-        // Gọi Gemini API
-        // =============================================
-        async function callGemini(input) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-            const prompt = `You are a friendly English tutor for Vietnamese learners.
-Reply to the student's message below.
-IMPORTANT: Return ONLY a raw JSON object. No markdown, no code blocks, no extra text.
-Format: {"en":"<your English reply>","vi":"<Vietnamese translation of your reply>","tip":"<one short grammar/vocab tip in Vietnamese>","sug":["<suggestion 1>","<suggestion 2>"]}
-Student message: "${input}"`;
+// ── INIT ──
+function init() {
+  addMessage('ai', {
+    en: "Hello! I'm your AI English tutor 🎓 Let's practice together! How are you today?",
+    vi: "Xin chào! Tôi là gia sư AI của bạn. Cùng luyện tập nhé! Hôm nay bạn thế nào?"
+  });
+  renderSuggs(currentSuggs);
+  textInput.addEventListener('input', () => {
+    sendBtn.disabled = !textInput.value.trim() || isLoading;
+  });
+  textInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFromInput(); }
+  });
+  textInput.addEventListener('focus', unlockSpeech);
+}
 
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
-                })
-            });
+// ── iOS SPEECH FIX ──
+function unlockSpeech() {
+  if (speechUnlocked || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance('');
+  u.volume = 0;
+  window.speechSynthesis.speak(u);
+  speechUnlocked = true;
+}
 
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err?.error?.message || `HTTP ${res.status}`);
-            }
+function speakText(text) {
+  if (!text || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  setTimeout(() => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  }, 120);
+}
 
-            const data = await res.json();
-            let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            // Dọn markdown nếu AI vẫn trả về
-            raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-            return JSON.parse(raw);
-        }
+// ── CLAUDE API (không cần API key) ──
+async function callClaude(userMsg) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      system: `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
+ALWAYS return ONLY a raw JSON object with no markdown, no code blocks:
+{"en":"<English reply>","vi":"<Vietnamese translation>","tip":"<one short grammar tip in Vietnamese, max 15 words>","sug":["<suggestion 1>","<suggestion 2>"]}`,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
 
-        // =============================================
-        // Component chính
-        // =============================================
-        const App = () => {
-            const [messages, setMessages] = useState([
-                { id: 1, role: 'ai', en: "Hello! I'm your AI English tutor. Let's practice! How are you today?", vi: "Xin chào! Tôi là gia sư AI của bạn. Cùng luyện tập nhé! Hôm nay bạn thế nào?" }
-            ]);
-            const [inputText, setInputText] = useState('');
-            const [isMic, setIsMic] = useState(false);
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState(null);
-            const [suggs, setSuggs] = useState(["I'm fine, thank you!", "I feel great today!"]);
-            const endRef = useRef(null);
-            const recRef = useRef(null);
-            const inputRef = useRef(null);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${res.status}`);
+  }
 
-            useEffect(() => {
-                endRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [messages, loading]);
+  const data = await res.json();
+  let raw = data?.content?.[0]?.text || '';
+  raw = raw.replace(/```json\s*/gi,'').replace(/```/g,'').trim();
+  return JSON.parse(raw);
+}
 
-            const send = useCallback(async (val) => {
-                const trimmed = (val || inputText).trim();
-                if (!trimmed || loading) return;
-                unlockSpeech(); // FIX iOS speech synthesis
-                setInputText('');
-                setError(null);
-                setMessages(prev => [...prev, { id: Date.now(), role: 'user', en: trimmed }]);
-                setLoading(true);
+// ── SEND ──
+async function sendMessage(text) {
+  const val = (text || '').trim();
+  if (!val || isLoading) return;
+  unlockSpeech();
 
-                try {
-                    const res = await callGemini(trimmed);
-                    setMessages(prev => [...prev, {
-                        id: Date.now() + 1,
-                        role: 'ai',
-                        en: res.en,
-                        vi: res.vi,
-                        tip: res.tip
-                    }]);
-                    if (res.sug && res.sug.length) setSuggs(res.sug);
-                    speak(res.en);
-                } catch (e) {
-                    setError('Lỗi: ' + e.message);
-                } finally {
-                    setLoading(false);
-                }
-            }, [inputText, loading]);
+  textInput.value = '';
+  sendBtn.disabled = true;
+  setLoading(true);
+  removeError();
 
-            // =============================================
-            // FIX 2: Speech Recognition cho iOS Safari
-            // - Phải HTTPS (hoặc localhost) mới chạy được
-            // - Xử lý lỗi rõ ràng từng loại
-            // =============================================
-            const startMic = useCallback(() => {
-                unlockSpeech();
-                const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  addMessage('user', { en: val });
+  const loadId = addLoading();
 
-                if (!Rec) {
-                    setError('Trình duyệt không hỗ trợ nhận giọng nói. Dùng Safari trên iOS 14.5+ hoặc Chrome.');
-                    return;
-                }
+  try {
+    const res = await callClaude(val);
+    removeLoading(loadId);
+    addMessage('ai', { en: res.en, vi: res.vi, tip: res.tip });
+    if (res.sug?.length) { currentSuggs = res.sug; renderSuggs(currentSuggs); }
+    speakText(res.en);
+  } catch (e) {
+    removeLoading(loadId);
+    showError('❌ ' + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
 
-                // Dừng nếu đang chạy
-                if (recRef.current && isMic) {
-                    recRef.current.stop();
-                    return;
-                }
+function sendFromInput() { sendMessage(textInput.value); }
 
-                const rec = new Rec();
-                recRef.current = rec;
-                rec.lang = 'en-US';
-                rec.continuous = false;
-                rec.interimResults = false;
-                rec.maxAlternatives = 1;
+// ── MIC ──
+function toggleMic() {
+  unlockSpeech();
+  if (isRecording) { stopMic(); return; }
 
-                rec.onstart = () => { setIsMic(true); setError(null); };
+  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Rec) {
+    showError('⚠️ Trình duyệt không hỗ trợ mic. Dùng Safari iOS 14.5+ hoặc Chrome.');
+    return;
+  }
 
-                rec.onresult = (e) => {
-                    const transcript = e.results[0][0].transcript;
-                    send(transcript);
-                };
+  recognition = new Rec();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
 
-                rec.onerror = (e) => {
-                    setIsMic(false);
-                    const msgs = {
-                        'not-allowed': 'Bạn chưa cho phép microphone. Vào Settings > Safari > Microphone.',
-                        'no-speech': 'Không nghe thấy gì. Thử lại nhé!',
-                        'network': 'Lỗi mạng khi nhận dạng giọng nói.',
-                        'audio-capture': 'Không truy cập được microphone.',
-                    };
-                    setError(msgs[e.error] || `Lỗi mic: ${e.error}`);
-                };
+  recognition.onstart = () => {
+    isRecording = true;
+    micBtn.classList.add('recording');
+    micLabel.textContent = '🎙️ Đang nghe...';
+    micLabel.classList.add('active');
+  };
+  recognition.onresult = e => { sendMessage(e.results[0][0].transcript); };
+  recognition.onerror = e => {
+    stopMic();
+    const msgs = {
+      'not-allowed': '⚠️ Chưa cấp quyền mic. Settings → Safari → Microphone → Allow.',
+      'no-speech': '🔇 Không nghe thấy. Thử lại nhé!',
+      'network': '🌐 Lỗi mạng khi nhận dạng giọng nói.',
+      'audio-capture': '🎤 Không truy cập được microphone.',
+    };
+    if (e.error !== 'no-speech') showError(msgs[e.error] || `Lỗi: ${e.error}`);
+  };
+  recognition.onend = () => stopMic();
 
-                rec.onend = () => { setIsMic(false); };
+  try { recognition.start(); }
+  catch(e) { showError('Không khởi động mic: ' + e.message); }
+}
 
-                try {
-                    rec.start();
-                } catch (e) {
-                    setError('Không khởi động được mic: ' + e.message);
-                    setIsMic(false);
-                }
-            }, [isMic, send]);
+function stopMic() {
+  isRecording = false;
+  micBtn.classList.remove('recording');
+  micLabel.textContent = 'Nhấn để nói';
+  micLabel.classList.remove('active');
+  try { recognition?.stop(); } catch(e) {}
+}
 
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                }
-            };
+// ── UI HELPERS ──
+function addMessage(role, data) {
+  const id = `msg-${++msgId}`;
+  const div = document.createElement('div');
+  div.className = `row ${role}`;
+  div.id = id;
 
-            // SVG Icons (không dùng Lucide CDN để tránh lỗi render)
-            const MicIcon = () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
-                </svg>
-            );
-            const StopIcon = () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="6" width="12" height="12" rx="2"/>
-                </svg>
-            );
-            const SendIcon = () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-            );
-            const SpeakerIcon = () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                </svg>
-            );
+  const speakBtn = role === 'ai'
+    ? `<button class="btn-speak" onclick="speakText(${JSON.stringify(data.en)})" title="Nghe lại">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+       </button>` : '';
 
-            return (
-                <div className="app-shell" style={{ boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
-                    {/* Header */}
-                    <div style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', padding: '14px 16px', borderRadius: '0 0 20px 20px', boxShadow: '0 4px 20px rgba(249,115,22,0.4)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🎓</div>
-                                <div>
-                                    <div style={{ color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: '-0.3px' }}>AI TUTOR PRO</div>
-                                    <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11 }}>Luyện tiếng Anh cùng AI</div>
-                                </div>
-                            </div>
-                            <button onClick={() => { window.speechSynthesis.cancel(); window.location.reload(); }}
-                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: 34, height: 34, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
-                                ↺
-                            </button>
-                        </div>
-                    </div>
+  const viLine  = data.vi  ? `<div class="bubble-vi">${esc(data.vi)}</div>` : '';
+  const tipLine = data.tip ? `<div class="bubble-tip"><span>💡</span><span>${esc(data.tip)}</span></div>` : '';
 
-                    {/* Chat area */}
-                    <div className="chat-area">
-                        {messages.map(m => (
-                            <div key={m.id} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                                <div style={{
-                                    maxWidth: '84%',
-                                    padding: '12px 16px',
-                                    borderRadius: m.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                                    background: m.role === 'user' ? 'linear-gradient(135deg,#f97316,#ea580c)' : '#f3f4f6',
-                                    color: m.role === 'user' ? '#fff' : '#1f2937',
-                                    boxShadow: m.role === 'user' ? '0 4px 12px rgba(249,115,22,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                                        <p style={{ fontSize: 15, fontWeight: 500, flex: 1, margin: 0, lineHeight: 1.5 }}>{m.en}</p>
-                                        {m.role === 'ai' && (
-                                            <button onClick={() => speak(m.en)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f97316', padding: '2px', flexShrink: 0 }}>
-                                                <SpeakerIcon />
-                                            </button>
-                                        )}
-                                    </div>
-                                    {m.vi && (
-                                        <p style={{ fontSize: 12, opacity: 0.6, margin: '6px 0 0', borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 6, fontStyle: 'italic', lineHeight: 1.4 }}>
-                                            {m.vi}
-                                        </p>
-                                    )}
-                                    {m.tip && (
-                                        <div style={{ marginTop: 8, fontSize: 11, color: '#2563eb', background: '#eff6ff', padding: '6px 10px', borderRadius: 10, lineHeight: 1.5, display: 'flex', gap: 4, alignItems: 'flex-start' }}>
-                                            <span>💡</span> <span>{m.tip}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+  div.innerHTML = `<div class="bubble ${role}">
+    <div class="bubble-head"><span class="bubble-en">${esc(data.en)}</span>${speakBtn}</div>
+    ${viLine}${tipLine}
+  </div>`;
 
-                        {loading && (
-                            <div style={{ display: 'flex', gap: 5, padding: '10px 16px', background: '#f3f4f6', borderRadius: '20px 20px 20px 4px', width: 'fit-content' }}>
-                                {[0,1,2].map(i => (
-                                    <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#f97316', animation: `bounce 1.2s ${i * 0.2}s ease-in-out infinite` }}></div>
-                                ))}
-                            </div>
-                        )}
+  chatEl.appendChild(div);
+  scrollBottom();
+  return id;
+}
 
-                        {error && (
-                            <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 12, padding: '10px 14px', fontSize: 12, lineHeight: 1.5 }}>
-                                ⚠️ {error}
-                            </div>
-                        )}
+function addLoading() {
+  const id = `load-${++msgId}`;
+  const div = document.createElement('div');
+  div.className = 'loading-row'; div.id = id;
+  div.innerHTML = `<div class="loading-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  chatEl.appendChild(div);
+  scrollBottom();
+  return id;
+}
 
-                        <div ref={endRef} style={{ height: 4 }} />
-                    </div>
+function removeLoading(id) { document.getElementById(id)?.remove(); }
 
-                    {/* Footer */}
-                    <div style={{ background: '#fff', borderTop: '1px solid #f3f4f6', padding: '10px 16px 16px', borderRadius: '20px 20px 0 0', boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' }}>
-                        {/* Suggestions */}
-                        <div className="no-sb" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 10 }}>
-                            {suggs.map((s, i) => (
-                                <button key={i} onClick={() => { unlockSpeech(); send(s); }} disabled={loading}
-                                    style={{ whiteSpace: 'nowrap', fontSize: 12, padding: '7px 14px', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: 20, cursor: 'pointer', fontWeight: 600, flexShrink: 0, opacity: loading ? 0.5 : 1 }}>
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
+function showError(msg) {
+  removeError();
+  const div = document.createElement('div');
+  div.className = 'error-box'; div.id = 'errBox'; div.textContent = msg;
+  chatEl.appendChild(div);
+  scrollBottom();
+}
+function removeError() { document.getElementById('errBox')?.remove(); }
 
-                        {/* FIX 3: Thêm text input */}
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14 }}>
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={inputText}
-                                onChange={e => setInputText(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                onFocus={() => unlockSpeech()}
-                                placeholder="Hoặc gõ tiếng Anh ở đây..."
-                                disabled={loading}
-                                style={{
-                                    flex: 1, padding: '11px 16px', borderRadius: 24, border: '1.5px solid #fed7aa',
-                                    background: '#fff7ed', fontSize: 15, outline: 'none', color: '#1f2937',
-                                    opacity: loading ? 0.6 : 1
-                                }}
-                            />
-                            <button onClick={() => send()} disabled={loading || !inputText.trim()}
-                                style={{ width: 44, height: 44, borderRadius: '50%', background: inputText.trim() ? 'linear-gradient(135deg,#f97316,#ea580c)' : '#e5e7eb', border: 'none', cursor: inputText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
-                                <SendIcon />
-                            </button>
-                        </div>
+function renderSuggs(list) {
+  suggsEl.innerHTML = '';
+  list.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'sugg-btn';
+    btn.textContent = s;
+    btn.disabled = isLoading;
+    btn.onclick = () => sendMessage(s);
+    suggsEl.appendChild(btn);
+  });
+}
 
-                        {/* Mic button */}
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <button onClick={startMic}
-                                className={isMic ? 'mic-pulse' : ''}
-                                style={{
-                                    width: 72, height: 72, borderRadius: '50%', border: 'none', cursor: 'pointer',
-                                    background: isMic ? '#ef4444' : 'linear-gradient(135deg,#f97316,#ea580c)',
-                                    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    boxShadow: isMic ? '0 0 0 4px rgba(239,68,68,0.2)' : '0 8px 24px rgba(249,115,22,0.4)',
-                                    transform: isMic ? 'scale(1.1)' : 'scale(1)',
-                                    transition: 'all 0.2s ease',
-                                }}>
-                                {isMic ? <StopIcon /> : <MicIcon />}
-                            </button>
-                        </div>
-                        {isMic && <p style={{ textAlign: 'center', fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 600 }}>🎙️ Đang nghe... Nói tiếng Anh</p>}
-                    </div>
-                </div>
-            );
-        };
+function setLoading(val) {
+  isLoading = val;
+  document.querySelectorAll('.sugg-btn').forEach(b => b.disabled = val);
+  if (!val) sendBtn.disabled = !textInput.value.trim();
+}
 
-        // CSS animation cho loading dots
-        const style = document.createElement('style');
-        style.textContent = `@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }`;
-        document.head.appendChild(style);
+function scrollBottom() {
+  requestAnimationFrame(() => { chatEl.scrollTop = chatEl.scrollHeight; });
+}
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function resetApp() {
+  window.speechSynthesis?.cancel();
+  stopMic();
+  chatEl.innerHTML = '';
+  msgId = 0; isLoading = false; speechUnlocked = false;
+  currentSuggs = ["I'm fine, thank you!", "Not bad, and you?"];
+  init();
+}
+
+init();
+</script>
 </body>
 </html>
