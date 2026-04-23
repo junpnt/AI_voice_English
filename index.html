@@ -71,7 +71,7 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .txt-in{flex:1;padding:11px 15px;border-radius:22px;border:1.5px solid var(--or-bd);background:var(--or-lt);font-family:'Nunito',sans-serif;font-size:16px;color:var(--tx);outline:none;-webkit-appearance:none;}
 .txt-in:focus{border-color:var(--or);}
 .txt-in::placeholder{color:#c4a99a;}
-.btn-snd{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--or);color:#fff;box-shadow:0 4px 14px rgba(232,84,30,0.35);}
+.btn-snd{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--or);color:#fff;box-shadow:0 4px 24px rgba(232,84,30,0.35);}
 .btn-snd:disabled{background:#e5e7eb;box-shadow:none;cursor:default;}
 .btn-snd:active:not(:disabled){transform:scale(0.92);}
 .mic-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;}
@@ -149,18 +149,19 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 </div>
 
 <script>
-// ==================== DANH SÁCH MODEL CHUẨN ====================
-// Các model được Google khuyến nghị cho key miễn phí
-const GEMINI_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
-  'gemini-pro'
+// ==================== DANH SÁCH MODEL CHUẨN & CẬP NHẬT ====================
+// Các model ổn định trong gói miễn phí 2026
+const FALLBACK_MODELS = [
+  'gemini-2.5-flash',          // Model ổn định, hiệu năng cao cho free tier (500 req/day)
+  'gemini-2.5-flash-lite',     // Model tiết kiệm, throughput cao
+  'gemini-2.0-flash-lite'      // Model cũ nhưng vẫn được hỗ trợ cho một số tài khoản
 ];
 const KEY_STORE = 'tutor_gemini_key';
 
 let API_KEY = '';
 let busy = false, recording = false, spkUnlock = false, rec = null, mid = 0;
 let suggs = ["I'm fine, thanks!", "Not bad, and you?"];
+let currentModel = null;        // Lưu model đang hoạt động
 
 const chatEl = document.getElementById('chat');
 const suggsEl = document.getElementById('suggs');
@@ -169,7 +170,7 @@ const sndBtn = document.getElementById('sndbtn');
 const micBtn = document.getElementById('micbtn');
 const micLbl = document.getElementById('miclbl');
 
-// ==================== KIỂM TRA KEY TRƯỚC KHI BẮT ĐẦU ====================
+// ==================== KIỂM TRA KEY VÀ TÌM MODEL KHẢ DỤNG ====================
 async function validateAndStart() {
   const key = document.getElementById('keyInput').value.trim();
   if (!key.startsWith('AIza') || key.length < 30) {
@@ -183,50 +184,80 @@ async function validateAndStart() {
   btn.disabled = true;
   
   try {
-    // Thử với model đầu tiên
-    let workingModel = null;
-    for (const model of GEMINI_MODELS) {
-      try {
-        const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-        const testRes = await fetch(testEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: "Say 'OK' in one word." }] }],
-            generationConfig: { maxOutputTokens: 5 }
-          })
-        });
-        if (testRes.ok) {
-          workingModel = model;
-          break;
-        } else if (testRes.status === 403 || testRes.status === 401) {
-          throw new Error('API key không hợp lệ hoặc chưa được bật API.');
-        } else if (testRes.status === 404) {
-          continue; // model không tồn tại, thử model khác
-        } else {
-          const errData = await testRes.json().catch(() => ({}));
-          if (errData?.error?.message?.includes('quota')) {
-            throw new Error('Hết quota dùng thử. Vui lòng thử key khác hoặc đợi.');
-          }
-        }
-      } catch (innerErr) {
-        if (innerErr.message.includes('API key') || innerErr.message.includes('quota')) throw innerErr;
-        // lỗi khác thì tiếp tục thử model khác
+    // Bước 1: Gọi API list models để xem tài khoản được phép dùng model nào
+    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+    const listRes = await fetch(listUrl);
+    
+    if (!listRes.ok) {
+      if (listRes.status === 403 || listRes.status === 401) {
+        throw new Error('API key không hợp lệ hoặc chưa được bật API.');
       }
+      throw new Error(`Không thể lấy danh sách model (HTTP ${listRes.status})`);
     }
     
-    if (!workingModel) throw new Error('Không có model nào khả dụng. Vui lòng thử lại sau.');
+    const listData = await listRes.json();
+    const availableModels = listData.models || [];
     
-    // Key hợp lệ
+    // Lọc ra các model hỗ trợ generateContent (text generation)
+    const validModels = availableModels.filter(m => 
+      m.supportedGenerationMethods?.includes('generateContent') &&
+      (m.name.includes('flash') || m.name.includes('pro')) // Ưu tiên model chat
+    ).map(m => m.name);
+    
+    if (validModels.length === 0) {
+      // Fallback: thử danh sách có sẵn
+      console.warn('Không tìm thấy model nào từ API list, thử danh sách mặc định');
+      for (const model of FALLBACK_MODELS) {
+        if (await testModel(key, model)) {
+          currentModel = model;
+          break;
+        }
+      }
+    } else {
+      // Chọn model flash ổn định nhất
+      currentModel = validModels.find(m => m.includes('2.5-flash')) || 
+                     validModels.find(m => m.includes('flash')) || 
+                     validModels[0];
+    }
+    
+    if (!currentModel) {
+      throw new Error('Không tìm thấy model nào khả dụng cho tài khoản của bạn. Hãy thử tạo API key mới.');
+    }
+    
+    // Xác nhận model cuối cùng hoạt động
+    if (!await testModel(key, currentModel)) {
+      throw new Error(`Model ${currentModel} không khả dụng.`);
+    }
+    
+    // Mọi thứ OK
     API_KEY = key;
     localStorage.setItem(KEY_STORE, key);
     document.getElementById('setup').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     initChat();
+    
   } catch (err) {
     showSetupErr(err.message);
     btn.textContent = originalText;
     btn.disabled = false;
+  }
+}
+
+// Hàm test thử một model có hoạt động không
+async function testModel(key, modelName) {
+  try {
+    const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+    const testRes = await fetch(testEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: "Say 'OK' in one word." }] }],
+        generationConfig: { maxOutputTokens: 5 }
+      })
+    });
+    return testRes.ok;
+  } catch {
+    return false;
   }
 }
 
@@ -243,35 +274,44 @@ function logout() {
   window.speechSynthesis?.cancel(); stopMic();
   localStorage.removeItem(KEY_STORE);
   API_KEY = '';
+  currentModel = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('setup').style.display = 'flex';
   document.getElementById('keyInput').value = '';
   document.getElementById('setupErr').style.display = 'none';
 }
 
-// Tự động đăng nhập nếu đã lưu key (kiểm tra nhanh)
+// Tự động đăng nhập nếu đã lưu key
 window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem(KEY_STORE);
   if (saved) {
     API_KEY = saved;
     document.getElementById('keyInput').value = saved;
-    // Kiểm tra nhanh model đầu tiên
+    // Thử tìm model nhanh
     try {
-      const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${saved}`;
-      const testRes = await fetch(testEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }], generationConfig: { maxOutputTokens: 1 } })
-      });
-      if (testRes.ok) {
-        document.getElementById('setup').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
-        initChat();
-        return;
+      const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${saved}`;
+      const listRes = await fetch(listUrl);
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        const availableModels = listData.models || [];
+        const validModels = availableModels.filter(m => 
+          m.supportedGenerationMethods?.includes('generateContent') &&
+          (m.name.includes('flash') || m.name.includes('pro'))
+        ).map(m => m.name);
+        currentModel = validModels.find(m => m.includes('2.5-flash')) || 
+                       validModels.find(m => m.includes('flash')) || 
+                       validModels[0];
+        if (currentModel && await testModel(saved, currentModel)) {
+          document.getElementById('setup').style.display = 'none';
+          document.getElementById('app').style.display = 'flex';
+          initChat();
+          return;
+        }
       }
     } catch(e) { /* key cũ không dùng được */ }
     localStorage.removeItem(KEY_STORE);
     API_KEY = '';
+    currentModel = null;
     document.getElementById('keyInput').value = '';
     showSetupErr('Key đã lưu không còn hiệu lực. Vui lòng nhập key mới.');
   }
@@ -311,59 +351,44 @@ function speakTxt(t) {
   }, 120);
 }
 
-// ==================== GEMINI CALL VỚI FALLBACK THÔNG MINH ====================
-let currentModelIndex = 0; // lưu model đang dùng thành công
-
+// ==================== GEMINI CALL ====================
 async function callGemini(userMsg) {
-  // Thử lần lượt các model từ vị trí hiện tại hoặc từ đầu
-  for (let i = 0; i < GEMINI_MODELS.length; i++) {
-    const model = GEMINI_MODELS[(currentModelIndex + i) % GEMINI_MODELS.length];
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
-    
-    const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
+  if (!currentModel) {
+    throw new Error('Chưa xác định được model khả dụng. Hãy thử logout và đăng nhập lại.');
+  }
+  
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${API_KEY}`;
+  
+  const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
 Return ONLY a raw JSON object, no markdown, no code blocks, no extra text:
 {"en":"<English reply>","vi":"<Vietnamese translation>","tip":"<one grammar/vocab tip in Vietnamese, max 15 words>","sug":["<suggestion 1>","<suggestion 2>"]}
 Student: ${userMsg}`;
 
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
-        })
-      });
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
+    })
+  });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        const errMsg = errData?.error?.message || `HTTP ${res.status}`;
-        if (res.status === 404 || errMsg.includes('not found')) {
-          console.warn(`Model ${model} không khả dụng, thử model tiếp theo...`);
-          continue; // thử model tiếp theo
-        }
-        if (res.status === 403 || res.status === 401) {
-          throw new Error('API key không hợp lệ hoặc chưa được bật API. Hãy logout và nhập key mới.');
-        }
-        if (res.status === 429) throw new Error('Đã hết quota dùng thử. Vui lòng đợi hoặc dùng key khác.');
-        throw new Error(errMsg);
-      }
-
-      const data = await res.json();
-      let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('AI trả về sai định dạng JSON.');
-      // Thành công, cập nhật model index hiện tại
-      currentModelIndex = GEMINI_MODELS.indexOf(model);
-      return JSON.parse(match[0]);
-    } catch (e) {
-      if (e.message.includes('API key') || e.message.includes('quota') || e.message.includes('network')) throw e;
-      // Lỗi khác thì thử model tiếp
-      console.warn(`Lỗi với model ${model}:`, e.message);
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    const errMsg = errData?.error?.message || `HTTP ${res.status}`;
+    if (res.status === 403 || res.status === 401) {
+      throw new Error('API key không hợp lệ hoặc chưa được bật API.');
     }
+    if (res.status === 429) throw new Error('Đã hết quota dùng thử. Vui lòng đợi hoặc dùng key khác.');
+    throw new Error(errMsg);
   }
-  throw new Error('Không có model nào khả dụng. Vui lòng thử lại sau.');
+
+  const data = await res.json();
+  let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('AI trả về sai định dạng JSON.');
+  return JSON.parse(match[0]);
 }
 
 // ==================== SEND MESSAGE ====================
@@ -384,10 +409,9 @@ async function sendMsg(txt) {
   } catch(e) {
     removeEl(lid);
     let errorMsg = e.message;
-    if (errorMsg.includes('API key')) errorMsg = '🔑 API key không hợp lệ hoặc chưa bật API. Hãy logout và nhập key mới, đảm bảo đã bật Generative Language API.';
+    if (errorMsg.includes('API key')) errorMsg = '🔑 API key không hợp lệ hoặc chưa bật API. Hãy logout và nhập key mới.';
     else if (errorMsg.includes('quota')) errorMsg = '📉 Hết quota dùng thử Gemini. Bạn có thể đợi hoặc dùng key khác.';
     else if (errorMsg.includes('network')) errorMsg = '📡 Lỗi mạng, kiểm tra kết nối.';
-    else if (errorMsg.includes('model')) errorMsg = '⚠️ Không có model khả dụng. Thử lại sau ít phút.';
     showErr(errorMsg);
   } finally {
     setBusy(false);
