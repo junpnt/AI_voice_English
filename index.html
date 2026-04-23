@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>AI English Tutor</title>
+<title>AI English Tutor - Gemini</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -29,7 +29,8 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .setup-hint a{color:var(--or);text-decoration:none;font-weight:700;}
 .btn-start{width:100%;max-width:360px;padding:14px;border-radius:14px;border:none;background:var(--or);color:#fff;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:-0.3px;box-shadow:0 8px 24px rgba(232,84,30,0.35);}
 .btn-start:active{transform:scale(0.98);}
-.setup-err{color:#dc2626;font-size:12px;text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;width:100%;max-width:360px;}
+.setup-err{color:#dc2626;font-size:12px;text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;width:100%;max-width:360px;margin-top:8px;}
+.setup-success{color:#16a34a;background:#f0fdf4;border-color:#bbf7d0;}
 #app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:var(--sur);box-shadow:0 0 60px rgba(0,0,0,0.08);}
 .hd{background:var(--or);padding:14px 18px;padding-top:max(14px,var(--sp-top));border-radius:0 0 22px 22px;box-shadow:0 6px 24px rgba(232,84,30,0.35);flex-shrink:0;}
 .hd-in{display:flex;align-items:center;justify-content:space-between;}
@@ -97,11 +98,12 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
     <div class="setup-label">Gemini API Key</div>
     <input class="setup-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
     <div class="setup-hint">
-      Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>
+      Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a><br>
+      <span style="font-size:10px;">⚠️ Sau khi lấy key, cần bật "Generative Language API" trong Google Cloud Console (miễn phí).</span>
     </div>
   </div>
   <div id="setupErr" class="setup-err" style="display:none;"></div>
-  <button class="btn-start" onclick="startApp()">Bắt đầu luyện tập →</button>
+  <button class="btn-start" onclick="validateAndStart()" id="startBtn">Bắt đầu luyện tập →</button>
 </div>
 
 <div id="app" style="display:none;">
@@ -147,14 +149,8 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 </div>
 
 <script>
-// ==================== FIX: CORRECT GEMINI ENDPOINT ====================
-// Sử dụng v1beta và model gemini-1.5-flash-latest (ổn định, hỗ trợ đầy đủ)
-// Fallback sang gemini-pro nếu lỗi model not found
-const GEMINI_MODELS = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-pro'
-];
+// ==================== CHUẨN ENDPOINT GEMINI ====================
+const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
 const KEY_STORE = 'tutor_gemini_key';
 
 let API_KEY = '';
@@ -168,23 +164,63 @@ const sndBtn = document.getElementById('sndbtn');
 const micBtn = document.getElementById('micbtn');
 const micLbl = document.getElementById('miclbl');
 
-// ==================== SETUP ====================
-function startApp() {
+// ==================== KIỂM TRA KEY TRƯỚC KHI BẮT ĐẦU ====================
+async function validateAndStart() {
   const key = document.getElementById('keyInput').value.trim();
   if (!key.startsWith('AIza') || key.length < 30) {
-    showSetupErr('Key không hợp lệ. Key Gemini bắt đầu bằng "AIza..." và dài hơn 30 ký tự.');
+    showSetupErr('Key không hợp lệ. Key Gemini bắt đầu bằng "AIza..." và dài >30 ký tự.');
     return;
   }
-  API_KEY = key;
-  localStorage.setItem(KEY_STORE, key);
-  document.getElementById('setup').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  initChat();
+  
+  const btn = document.getElementById('startBtn');
+  const originalText = btn.textContent;
+  btn.textContent = 'Đang kiểm tra key...';
+  btn.disabled = true;
+  
+  try {
+    // Gọi thử một request nhỏ để xác thực key
+    const testModel = 'gemini-1.5-flash';
+    const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${key}`;
+    const testRes = await fetch(testEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: "Say 'OK' in one word." }] }],
+        generationConfig: { maxOutputTokens: 5 }
+      })
+    });
+    
+    if (!testRes.ok) {
+      const errData = await testRes.json().catch(() => ({}));
+      let errorMsg = errData?.error?.message || `HTTP ${testRes.status}`;
+      if (testRes.status === 403 || testRes.status === 401) {
+        errorMsg = 'API key không hợp lệ hoặc chưa được bật. Hãy đảm bảo: 1) Key đúng, 2) Đã bật "Generative Language API" trong Google Cloud Console (miễn phí).';
+      } else if (testRes.status === 404) {
+        errorMsg = 'Model không khả dụng. Thử lại sau.';
+      }
+      throw new Error(errorMsg);
+    }
+    
+    // Key hợp lệ
+    API_KEY = key;
+    localStorage.setItem(KEY_STORE, key);
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initChat();
+  } catch (err) {
+    showSetupErr(err.message);
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
 }
 
 function showSetupErr(msg) {
   const el = document.getElementById('setupErr');
-  el.textContent = msg; el.style.display = 'block';
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => {
+    if (el.style.display === 'block') el.style.display = 'none';
+  }, 8000);
 }
 
 function logout() {
@@ -197,17 +233,36 @@ function logout() {
   document.getElementById('setupErr').style.display = 'none';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+// Tự động đăng nhập nếu đã lưu key (và key vẫn hoạt động - nhưng để an toàn thì vẫn cho vào app, nếu lỗi sẽ báo)
+window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem(KEY_STORE);
   if (saved) {
+    // Thử xác thực nhanh nhưng không chặn, nếu lỗi thì vẫn cho nhập lại
     API_KEY = saved;
     document.getElementById('keyInput').value = saved;
-    document.getElementById('setup').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    initChat();
+    // Kiểm tra nhẹ
+    try {
+      const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${saved}`;
+      const testRes = await fetch(testEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }], generationConfig: { maxOutputTokens: 2 } })
+      });
+      if (testRes.ok) {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        initChat();
+        return;
+      }
+    } catch(e) { /* key cũ không dùng được, hiện màn hình setup */ }
+    // Nếu key cũ lỗi, xóa và yêu cầu nhập lại
+    localStorage.removeItem(KEY_STORE);
+    API_KEY = '';
+    document.getElementById('keyInput').value = '';
+    showSetupErr('Key đã lưu không còn hiệu lực. Vui lòng nhập key mới.');
   }
   document.getElementById('keyInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') startApp();
+    if (e.key === 'Enter') validateAndStart();
   });
 });
 
@@ -225,7 +280,6 @@ function initChat() {
   inp.addEventListener('focus', unlockSpk);
 }
 
-// iOS speech synthesis unlock
 function unlockSpk() {
   if (spkUnlock || !window.speechSynthesis) return;
   const u = new SpeechSynthesisUtterance(''); u.volume = 0;
@@ -269,15 +323,14 @@ Student: ${userMsg}`;
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       const errMsg = errData?.error?.message || `HTTP ${res.status}`;
-      // Nếu lỗi liên quan đến model not found, thử model tiếp theo
-      if (errMsg.includes('not found') || errMsg.includes('not supported') || res.status === 404) {
-        console.warn(`Model ${model} failed, trying next...`);
+      if (errMsg.includes('not found') || errMsg.includes('404') || res.status === 404) {
+        console.warn(`Model ${model} không khả dụng, thử model tiếp theo...`);
         return callGeminiWithFallback(userMsg, modelIndex + 1);
       }
-      // Lỗi key quota hoặc xác thực
-      if (res.status === 400 || res.status === 403 || res.status === 401) {
-        throw new Error(`${errMsg} — Kiểm tra lại API key hoặc hạn mức.`);
+      if (res.status === 403 || res.status === 401) {
+        throw new Error('API key không hợp lệ hoặc chưa được bật. Vào Google Cloud Console bật "Generative Language API".');
       }
+      if (res.status === 429) throw new Error('Đã hết quota dùng thử. Vui lòng đợi hoặc nâng cấp.');
       throw new Error(errMsg);
     }
 
@@ -288,9 +341,7 @@ Student: ${userMsg}`;
     if (!match) throw new Error('AI trả về sai định dạng JSON.');
     return JSON.parse(match[0]);
   } catch (e) {
-    // Nếu lỗi mạng hoặc lỗi khác, không fallback nữa
     if (e.message.includes('network') || e.message.includes('fetch')) throw e;
-    // Nếu lỗi do model, tiếp tục fallback
     if (e.message.includes('not found') || e.message.includes('404')) {
       return callGeminiWithFallback(userMsg, modelIndex + 1);
     }
@@ -316,9 +367,9 @@ async function sendMsg(txt) {
   } catch(e) {
     removeEl(lid);
     let errorMsg = e.message;
-    if (errorMsg.includes('API key')) errorMsg = 'API key không hợp lệ hoặc đã hết hạn. Hãy logout và nhập lại key mới.';
-    else if (errorMsg.includes('quota')) errorMsg = 'Đã hết lượt dùng thử Gemini. Vui lòng đợi hoặc nâng cấp tài khoản.';
-    else if (errorMsg.includes('network')) errorMsg = 'Lỗi mạng, hãy kiểm tra kết nối internet.';
+    if (errorMsg.includes('API key')) errorMsg = '🔑 API key không hợp lệ hoặc chưa bật API. Hãy logout và nhập key mới, đảm bảo đã bật Generative Language API.';
+    else if (errorMsg.includes('quota')) errorMsg = '📉 Hết quota dùng thử Gemini. Bạn có thể đợi hoặc dùng key khác.';
+    else if (errorMsg.includes('network')) errorMsg = '📡 Lỗi mạng, kiểm tra kết nối.';
     showErr(errorMsg);
   } finally {
     setBusy(false);
@@ -342,10 +393,10 @@ function toggleMic() {
   rec.onerror = e => {
     stopMic();
     const m = {
-      'not-allowed': 'Chưa cấp quyền mic. Settings → Safari → Microphone → Allow.',
-      'no-speech':   'Không nghe thấy giọng nói. Thử lại nhé!',
-      'network':     'Lỗi mạng khi nhận dạng giọng nói.',
-      'audio-capture': 'Không truy cập được microphone.'
+      'not-allowed': '🎤 Chưa cấp quyền mic. Vào Settings → Safari → Microphone → Allow.',
+      'no-speech':   '🎙️ Không nghe thấy giọng nói. Thử lại nhé!',
+      'network':     '📶 Lỗi mạng khi nhận dạng giọng nói.',
+      'audio-capture': '🔇 Không truy cập được microphone.'
     };
     if (e.error !== 'no-speech') showErr(m[e.error] || `Lỗi mic: ${e.error}`);
   };
