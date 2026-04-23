@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily English Voice Tutor</title>
+    <!-- Tailwind CSS v3 (dễ dùng cho single file) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #FDFCFB; }
+        .rounded-tl-sm { border-top-left-radius: 4px !important; }
+        .rounded-tr-sm { border-top-right-radius: 4px !important; }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .animate-bounce-slow { animation: bounce-slow 1s infinite; }
+    </style>
+</head>
+<body class="text-[#1D1D1F]">
+    <div id="root"></div>
+
+    <!-- React and Libraries -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    
+    <!-- Gemini SDK -->
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.run/@google/genai"
+      }
+    }
+    </script>
+
+    <script type="text/babel" data-type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        // IMPORTANT: Thay bằng API Key của bạn để chạy trên GitHub/Máy cục bộ
+        const GEMINI_API_KEY = "YOUR_API_KEY_HERE"; 
+
+        const SYSTEM_PROMPT = `You are a patient and friendly English Tutor for Vietnamese beginners. 
+Your goal is to help the user practice daily English conversations.
+1. Speak clearly and slowly. 
+2. Use simple and common daily vocabulary.
+3. If the user makes a mistake, gently correct them.
+4. Provide meanings in Vietnamese for new words in parentheses.
+5. Always provide 2-3 short "suggestions" in English for the user to answer.
+Respond in JSON: {"text": "audio text", "display": "ui text", "feedback": "correction", "vocabulary": [{"word": "A", "meaning": "B"}], "suggestions": ["S1", "S2"]}`;
+
+        const App = () => {
+            const [messages, setMessages] = React.useState([{
+                id: '1', role: 'assistant', 
+                text: "Hello! I'm your English tutor. Ready to practice? Let's talk about your day!",
+                displayText: "Chào bạn! Tôi là trợ lý tiếng Anh của bạn. Bạn đã sẵn sàng luyện tập chưa?",
+                suggestions: ["I am doing great!", "I had a busy day"]
+            }]);
+            const [isListening, setIsListening] = React.useState(false);
+            const [isProcessing, setIsProcessing] = React.useState(false);
+            const [currentFeedback, setCurrentFeedback] = React.useState({ newWords: [], suggestions: ["I am doing great!", "I had a busy day"] });
+            const [transcript, setTranscript] = React.useState('');
+            const scrollRef = React.useRef(null);
+
+            const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+            React.useEffect(() => {
+                scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+
+            const speak = (text) => {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                window.speechSynthesis.speak(utterance);
+            };
+
+            const chatWithAI = async (input, history) => {
+                const contents = [...history, { role: 'user', parts: [{ text: input }] }];
+                const response = await ai.models.generateContent({
+                    model: "gemini-1.5-flash", // Dùng model ổn định
+                    contents: contents,
+                    config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: "application/json" }
+                });
+                return JSON.parse(response.candidates[0].content.parts[0].text);
+            };
+
+            const handleUserAction = async (text) => {
+                const userMsg = { id: Date.now().toString(), role: 'user', text };
+                setMessages(prev => [...prev, userMsg]);
+                setIsProcessing(true);
+
+                try {
+                    const history = messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] }));
+                    const res = await chatWithAI(text, history);
+                    
+                    const assistantMsg = { id: (Date.now()+1).toString(), role: 'assistant', text: res.text, displayText: res.display };
+                    setMessages(prev => [...prev, assistantMsg]);
+                    setCurrentFeedback({ correction: res.feedback, newWords: res.vocabulary || [], suggestions: res.suggestions || [] });
+                    speak(res.text);
+                } catch (e) { console.error(e); }
+                finally { setIsProcessing(false); }
+            };
+
+            const startMic = () => {
+                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = 'en-US';
+                recognition.onstart = () => setIsListening(true);
+                recognition.onresult = (e) => setTranscript(e.results[0][0].transcript);
+                recognition.onend = () => {
+                    setIsListening(false);
+                    if (transcript) handleUserAction(transcript);
+                };
+                recognition.start();
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <header className="p-4 bg-white border-b flex justify-between items-center sticky top-0">
+                        <div className="flex items-center gap-2">
+                            <div className="bg-orange-500 p-2 rounded-lg"><i data-lucide="languages" className="text-white w-5 h-5"></i></div>
+                            <h1 className="font-bold">AI English Tutor</h1>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 max-w-4xl mx-auto w-full p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
+                        <div className="md:col-span-8 space-y-4">
+                            {messages.map(m => (
+                                <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`p-4 rounded-2xl max-w-[80%] ${m.role === 'user' ? 'bg-orange-500 text-white rounded-tr-sm' : 'bg-white border rounded-tl-sm'}`}>
+                                        <p className="font-medium">{m.text}</p>
+                                        {m.displayText && <p className="text-sm mt-2 opacity-70 border-t pt-2">{m.displayText}</p>}
+                                    </div>
+                                </div>
+                            ))}
+                            {isProcessing && <div className="text-gray-400 text-xs animate-pulse italic">AI is thinking...</div>}
+                            <div ref={scrollRef} />
+                        </div>
+
+                        <div className="md:col-span-4 space-y-6">
+                            {currentFeedback.suggestions.length > 0 && (
+                                <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                                    <h3 className="text-xs font-bold text-orange-600 mb-3 uppercase">Try saying...</h3>
+                                    <div className="space-y-2">
+                                        {currentFeedback.suggestions.map((s, i) => (
+                                            <button key={i} onClick={() => handleUserAction(s)} className="w-full text-left text-xs bg-white p-2 rounded-lg border hover:bg-orange-100 transition-colors uppercase">{s}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {currentFeedback.correction && (
+                                <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 text-sm">
+                                    <h3 className="font-bold text-amber-700 mb-1">Tip:</h3>
+                                    <p className="text-amber-800">{currentFeedback.correction}</p>
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    <div className="fixed bottom-6 left-0 right-0 flex justify-center p-4">
+                        <button onClick={isListening ? () => {} : startMic} 
+                                className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all ${isListening ? 'bg-red-500 scale-110' : 'bg-orange-500'}`}>
+                            <i data-lucide={isListening ? 'mic-off' : 'mic'} className="text-white w-8 h-8"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        setTimeout(() => lucide.createIcons(), 500);
+    </script>
+</body>
+</html>
