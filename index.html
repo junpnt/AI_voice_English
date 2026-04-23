@@ -99,7 +99,7 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
     <input class="setup-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
     <div class="setup-hint">
       Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a><br>
-      <span style="font-size:10px;">⚠️ Sau khi lấy key, cần bật "Generative Language API" trong Google Cloud Console (miễn phí).</span>
+      <span style="font-size:10px;">✅ Sau khi lấy key, cần bật "Generative Language API" trong Google Cloud Console (miễn phí).</span>
     </div>
   </div>
   <div id="setupErr" class="setup-err" style="display:none;"></div>
@@ -149,8 +149,13 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 </div>
 
 <script>
-// ==================== CHUẨN ENDPOINT GEMINI ====================
-const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+// ==================== DANH SÁCH MODEL CHUẨN ====================
+// Các model được Google khuyến nghị cho key miễn phí
+const GEMINI_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-pro'
+];
 const KEY_STORE = 'tutor_gemini_key';
 
 let API_KEY = '';
@@ -178,28 +183,39 @@ async function validateAndStart() {
   btn.disabled = true;
   
   try {
-    // Gọi thử một request nhỏ để xác thực key
-    const testModel = 'gemini-1.5-flash';
-    const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${key}`;
-    const testRes = await fetch(testEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: "Say 'OK' in one word." }] }],
-        generationConfig: { maxOutputTokens: 5 }
-      })
-    });
-    
-    if (!testRes.ok) {
-      const errData = await testRes.json().catch(() => ({}));
-      let errorMsg = errData?.error?.message || `HTTP ${testRes.status}`;
-      if (testRes.status === 403 || testRes.status === 401) {
-        errorMsg = 'API key không hợp lệ hoặc chưa được bật. Hãy đảm bảo: 1) Key đúng, 2) Đã bật "Generative Language API" trong Google Cloud Console (miễn phí).';
-      } else if (testRes.status === 404) {
-        errorMsg = 'Model không khả dụng. Thử lại sau.';
+    // Thử với model đầu tiên
+    let workingModel = null;
+    for (const model of GEMINI_MODELS) {
+      try {
+        const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const testRes = await fetch(testEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: "Say 'OK' in one word." }] }],
+            generationConfig: { maxOutputTokens: 5 }
+          })
+        });
+        if (testRes.ok) {
+          workingModel = model;
+          break;
+        } else if (testRes.status === 403 || testRes.status === 401) {
+          throw new Error('API key không hợp lệ hoặc chưa được bật API.');
+        } else if (testRes.status === 404) {
+          continue; // model không tồn tại, thử model khác
+        } else {
+          const errData = await testRes.json().catch(() => ({}));
+          if (errData?.error?.message?.includes('quota')) {
+            throw new Error('Hết quota dùng thử. Vui lòng thử key khác hoặc đợi.');
+          }
+        }
+      } catch (innerErr) {
+        if (innerErr.message.includes('API key') || innerErr.message.includes('quota')) throw innerErr;
+        // lỗi khác thì tiếp tục thử model khác
       }
-      throw new Error(errorMsg);
     }
+    
+    if (!workingModel) throw new Error('Không có model nào khả dụng. Vui lòng thử lại sau.');
     
     // Key hợp lệ
     API_KEY = key;
@@ -233,20 +249,19 @@ function logout() {
   document.getElementById('setupErr').style.display = 'none';
 }
 
-// Tự động đăng nhập nếu đã lưu key (và key vẫn hoạt động - nhưng để an toàn thì vẫn cho vào app, nếu lỗi sẽ báo)
+// Tự động đăng nhập nếu đã lưu key (kiểm tra nhanh)
 window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem(KEY_STORE);
   if (saved) {
-    // Thử xác thực nhanh nhưng không chặn, nếu lỗi thì vẫn cho nhập lại
     API_KEY = saved;
     document.getElementById('keyInput').value = saved;
-    // Kiểm tra nhẹ
+    // Kiểm tra nhanh model đầu tiên
     try {
-      const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${saved}`;
+      const testEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${saved}`;
       const testRes = await fetch(testEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }], generationConfig: { maxOutputTokens: 2 } })
+        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }], generationConfig: { maxOutputTokens: 1 } })
       });
       if (testRes.ok) {
         document.getElementById('setup').style.display = 'none';
@@ -254,8 +269,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         initChat();
         return;
       }
-    } catch(e) { /* key cũ không dùng được, hiện màn hình setup */ }
-    // Nếu key cũ lỗi, xóa và yêu cầu nhập lại
+    } catch(e) { /* key cũ không dùng được */ }
     localStorage.removeItem(KEY_STORE);
     API_KEY = '';
     document.getElementById('keyInput').value = '';
@@ -297,56 +311,59 @@ function speakTxt(t) {
   }, 120);
 }
 
-// ==================== GEMINI CALL WITH FALLBACK ====================
-async function callGeminiWithFallback(userMsg, modelIndex = 0) {
-  if (modelIndex >= GEMINI_MODELS.length) {
-    throw new Error('Không tìm thấy model nào hoạt động. Vui lòng thử lại sau hoặc kiểm tra API key.');
-  }
-  const model = GEMINI_MODELS[modelIndex];
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
-  
-  const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
+// ==================== GEMINI CALL VỚI FALLBACK THÔNG MINH ====================
+let currentModelIndex = 0; // lưu model đang dùng thành công
+
+async function callGemini(userMsg) {
+  // Thử lần lượt các model từ vị trí hiện tại hoặc từ đầu
+  for (let i = 0; i < GEMINI_MODELS.length; i++) {
+    const model = GEMINI_MODELS[(currentModelIndex + i) % GEMINI_MODELS.length];
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+    
+    const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
 Return ONLY a raw JSON object, no markdown, no code blocks, no extra text:
 {"en":"<English reply>","vi":"<Vietnamese translation>","tip":"<one grammar/vocab tip in Vietnamese, max 15 words>","sug":["<suggestion 1>","<suggestion 2>"]}
 Student: ${userMsg}`;
 
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
-      })
-    });
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
+        })
+      });
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      const errMsg = errData?.error?.message || `HTTP ${res.status}`;
-      if (errMsg.includes('not found') || errMsg.includes('404') || res.status === 404) {
-        console.warn(`Model ${model} không khả dụng, thử model tiếp theo...`);
-        return callGeminiWithFallback(userMsg, modelIndex + 1);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = errData?.error?.message || `HTTP ${res.status}`;
+        if (res.status === 404 || errMsg.includes('not found')) {
+          console.warn(`Model ${model} không khả dụng, thử model tiếp theo...`);
+          continue; // thử model tiếp theo
+        }
+        if (res.status === 403 || res.status === 401) {
+          throw new Error('API key không hợp lệ hoặc chưa được bật API. Hãy logout và nhập key mới.');
+        }
+        if (res.status === 429) throw new Error('Đã hết quota dùng thử. Vui lòng đợi hoặc dùng key khác.');
+        throw new Error(errMsg);
       }
-      if (res.status === 403 || res.status === 401) {
-        throw new Error('API key không hợp lệ hoặc chưa được bật. Vào Google Cloud Console bật "Generative Language API".');
-      }
-      if (res.status === 429) throw new Error('Đã hết quota dùng thử. Vui lòng đợi hoặc nâng cấp.');
-      throw new Error(errMsg);
-    }
 
-    const data = await res.json();
-    let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('AI trả về sai định dạng JSON.');
-    return JSON.parse(match[0]);
-  } catch (e) {
-    if (e.message.includes('network') || e.message.includes('fetch')) throw e;
-    if (e.message.includes('not found') || e.message.includes('404')) {
-      return callGeminiWithFallback(userMsg, modelIndex + 1);
+      const data = await res.json();
+      let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('AI trả về sai định dạng JSON.');
+      // Thành công, cập nhật model index hiện tại
+      currentModelIndex = GEMINI_MODELS.indexOf(model);
+      return JSON.parse(match[0]);
+    } catch (e) {
+      if (e.message.includes('API key') || e.message.includes('quota') || e.message.includes('network')) throw e;
+      // Lỗi khác thì thử model tiếp
+      console.warn(`Lỗi với model ${model}:`, e.message);
     }
-    throw e;
   }
+  throw new Error('Không có model nào khả dụng. Vui lòng thử lại sau.');
 }
 
 // ==================== SEND MESSAGE ====================
@@ -359,7 +376,7 @@ async function sendMsg(txt) {
   addMsg('user', { en: v });
   const lid = addLoading();
   try {
-    const res = await callGeminiWithFallback(v);
+    const res = await callGemini(v);
     removeEl(lid);
     addMsg('ai', { en: res.en, vi: res.vi, tip: res.tip });
     if (res.sug?.length) { suggs = res.sug; renderSuggs(suggs); }
@@ -370,6 +387,7 @@ async function sendMsg(txt) {
     if (errorMsg.includes('API key')) errorMsg = '🔑 API key không hợp lệ hoặc chưa bật API. Hãy logout và nhập key mới, đảm bảo đã bật Generative Language API.';
     else if (errorMsg.includes('quota')) errorMsg = '📉 Hết quota dùng thử Gemini. Bạn có thể đợi hoặc dùng key khác.';
     else if (errorMsg.includes('network')) errorMsg = '📡 Lỗi mạng, kiểm tra kết nối.';
+    else if (errorMsg.includes('model')) errorMsg = '⚠️ Không có model khả dụng. Thử lại sau ít phút.';
     showErr(errorMsg);
   } finally {
     setBusy(false);
