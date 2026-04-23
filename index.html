@@ -3,135 +3,626 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>AI English Tutor</title>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>AI English Tutor Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
-:root{
-  --or:#e8541e; --or2:#ff6b35; --or-lt:#fff0eb; --or-bd:#ffd5c2; --or-dk:#bf3d0e;
-  --bg:#faf9f7; --sur:#ffffff; --bd:#f0ede8;
-  --tx:#1a1512; --tx2:#8a7d74;
-  --ai:#f5f3f0;
-  --sp-bot:env(safe-area-inset-bottom,0px);
-  --sp-top:env(safe-area-inset-top,0px);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:100dvh;overflow:hidden;color:var(--tx);}
-/* ── SETUP SCREEN ── */
-#setup{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:20px;}
-.setup-logo{width:72px;height:72px;border-radius:24px;background:var(--or);display:flex;align-items:center;justify-content:center;}
-.setup-logo svg{stroke:#fff;}
-.setup-title{font-size:22px;font-weight:800;color:var(--tx);text-align:center;letter-spacing:-0.5px;}
-.setup-sub{font-size:14px;color:var(--tx2);text-align:center;line-height:1.6;max-width:320px;}
-.setup-card{width:100%;max-width:360px;background:var(--sur);border:1px solid var(--bd);border-radius:20px;padding:20px;}
-.setup-label{font-size:12px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
-.setup-input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--or-bd);background:var(--or-lt);font-family:'Nunito',sans-serif;font-size:15px;color:var(--tx);outline:none;letter-spacing:1px;}
-.setup-input:focus{border-color:var(--or);}
-.setup-hint{font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5;}
-.setup-hint a{color:var(--or);text-decoration:none;font-weight:700;}
-.btn-start{width:100%;max-width:360px;padding:14px;border-radius:14px;border:none;background:var(--or);color:#fff;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:-0.3px;box-shadow:0 8px 24px rgba(232,84,30,0.35);}
-.btn-start:active{transform:scale(0.98);}
-.setup-err{color:#dc2626;font-size:12px;text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;width:100%;max-width:360px;}
-/* ── MAIN APP ── */
-#app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:var(--sur);box-shadow:0 0 60px rgba(0,0,0,0.08);}
-.hd{background:var(--or);padding:14px 18px;padding-top:max(14px,var(--sp-top));border-radius:0 0 22px 22px;box-shadow:0 6px 24px rgba(232,84,30,0.35);flex-shrink:0;}
-.hd-in{display:flex;align-items:center;justify-content:space-between;}
-.hd-l{display:flex;align-items:center;gap:10px;}
-.hd-av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;}
-.hd-av svg{stroke:#fff;}
-.hd-t{color:#fff;font-weight:800;font-size:15px;line-height:1;}
-.hd-s{color:rgba(255,255,255,0.72);font-size:11px;margin-top:2px;}
-.hd-btns{display:flex;gap:8px;}
-.hd-btn{background:rgba(255,255,255,0.18);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;}
-.hd-btn:active{background:rgba(255,255,255,0.32);}
-/* ── CHAT ── */
-.chat{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 12px;display:flex;flex-direction:column;gap:12px;}
-.chat::-webkit-scrollbar{width:3px;}
-.chat::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px;}
-.row{display:flex;}
-.row.ai{justify-content:flex-start;}.row.user{justify-content:flex-end;}
-.bub{max-width:83%;padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.55;}
-.bub.ai{background:var(--ai);border-radius:4px 18px 18px 18px;color:var(--tx);}
-.bub.user{background:linear-gradient(135deg,var(--or2),var(--or));border-radius:18px 4px 18px 18px;color:#fff;box-shadow:0 4px 14px rgba(232,84,30,0.3);}
-.bub-en{font-weight:600;}
-.bub-vi{font-size:12px;color:var(--tx2);margin-top:5px;padding-top:5px;border-top:1px solid rgba(0,0,0,0.07);font-style:italic;}
-.bub.user .bub-vi{color:rgba(255,255,255,0.65);border-top-color:rgba(255,255,255,0.2);}
-.bub-tip{margin-top:7px;font-size:11px;color:#2563eb;background:#eff6ff;padding:5px 9px;border-radius:9px;line-height:1.5;}
-.bub-hd{display:flex;align-items:flex-start;gap:5px;}
-.btn-spk{background:none;border:none;cursor:pointer;color:var(--or);padding:1px;flex-shrink:0;opacity:0.7;}
-.btn-spk:active{opacity:1;}
+
+:root {
+  --primary: #e8541e;
+  --primary-dark: #bf3d0e;
+  --primary-light: #fff0eb;
+  --primary-border: #ffd5c2;
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --border: #f0ede8;
+  --text: #1a1512;
+  --text-light: #8a7d74;
+  --ai-bg: #f5f3f0;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+}
+
+body.dark {
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --border: #2c2c2c;
+  --text: #ededed;
+  --text-light: #a0a0a0;
+  --ai-bg: #2a2a2a;
+  --primary-light: #2c1a12;
+  --primary-border: #5c2a14;
+}
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  height: 100dvh;
+  overflow: hidden;
+  color: var(--text);
+  transition: background 0.2s, color 0.2s;
+}
+
+/* Setup screen */
+#setup {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 20px;
+}
+
+.setup-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 32px;
+}
+
+.setup-title {
+  font-size: 24px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.setup-sub {
+  font-size: 14px;
+  color: var(--text-light);
+  text-align: center;
+  max-width: 320px;
+}
+
+.setup-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.setup-label {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.setup-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--primary-border);
+  background: var(--primary-light);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+}
+
+.setup-input:focus {
+  border-color: var(--primary);
+}
+
+.setup-hint {
+  font-size: 11px;
+  margin-top: 8px;
+  color: var(--text-light);
+}
+
+.setup-hint a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.btn-start {
+  width: 100%;
+  max-width: 360px;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(232,84,30,0.35);
+}
+
+.btn-start:active {
+  transform: scale(0.98);
+}
+
+.setup-err {
+  background: #fef2f2;
+  color: var(--error);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  max-width: 360px;
+  display: none;
+}
+
+/* Main app */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 500px;
+  margin: 0 auto;
+  background: var(--surface);
+  box-shadow: 0 0 60px rgba(0,0,0,0.08);
+}
+
+/* Header */
+.hd {
+  background: var(--primary);
+  padding: 14px 18px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  border-radius: 0 0 22px 22px;
+  flex-shrink: 0;
+}
+
+.hd-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hd-l {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hd-av {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: white;
+}
+
+.hd-t {
+  color: white;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.hd-s {
+  color: rgba(255,255,255,0.72);
+  font-size: 11px;
+}
+
+.hd-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.hd-btn {
+  background: rgba(255,255,255,0.18);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+/* Controls bar (speed, theme, export) */
+.ctrl-bar {
+  background: var(--surface);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-light);
+  padding: 4px 10px;
+  border-radius: 40px;
+}
+
+.speed-control label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.speed-control input {
+  width: 100px;
+  cursor: pointer;
+}
+
+.speed-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  min-width: 45px;
+}
+
+.theme-toggle, .export-pdf {
+  background: var(--primary-light);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-toggle i, .export-pdf i {
+  font-size: 12px;
+}
+
+/* Topic selector */
+.topic-bar {
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.topic-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.topic-btn {
+  white-space: nowrap;
+  padding: 6px 14px;
+  border-radius: 30px;
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-dark);
+  cursor: pointer;
+}
+
+.topic-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Chat */
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+}
+
+.row.ai {
+  justify-content: flex-start;
+}
+
+.row.user {
+  justify-content: flex-end;
+}
+
+.bub {
+  max-width: 83%;
+  padding: 11px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.bub.ai {
+  background: var(--ai-bg);
+  border-radius: 4px 18px 18px 18px;
+}
+
+.bub.user {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-radius: 18px 4px 18px 18px;
+  box-shadow: 0 4px 14px rgba(232,84,30,0.3);
+}
+
+.bub-en {
+  font-weight: 600;
+}
+
+.bub-vi {
+  font-size: 12px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  font-style: italic;
+  color: var(--text-light);
+}
+
+.bub.user .bub-vi {
+  color: rgba(255,255,255,0.7);
+  border-top-color: rgba(255,255,255,0.2);
+}
+
+.bub-hd {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.btn-spk {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary);
+  opacity: 0.7;
+  padding: 2px;
+}
+
+.btn-spk:active {
+  opacity: 1;
+}
+
+/* Pronunciation practice button */
+.pronounce-btn {
+  margin-top: 8px;
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 /* Loading */
-.ld-row{display:flex;}.ld-bub{background:var(--ai);border-radius:4px 18px 18px 18px;padding:14px 18px;display:flex;gap:5px;align-items:center;}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--or);animation:db 1.2s ease-in-out infinite;}
-.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
-@keyframes db{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
-.err-box{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:12px;padding:9px 13px;font-size:12px;line-height:1.5;}
-/* ── FOOTER ── */
-.ft{background:var(--sur);border-top:1.5px solid var(--bd);border-radius:22px 22px 0 0;padding:11px 14px;padding-bottom:max(18px,var(--sp-bot));box-shadow:0 -4px 20px rgba(0,0,0,0.05);flex-shrink:0;}
-.suggs{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;}
-.suggs::-webkit-scrollbar{display:none;}
-.sg{white-space:nowrap;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 13px;background:var(--or-lt);color:var(--or-dk);border:1.5px solid var(--or-bd);border-radius:20px;cursor:pointer;flex-shrink:0;}
-.sg:active{background:var(--or-bd);}.sg:disabled{opacity:.4;cursor:default;}
-.inp-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
-.txt-in{flex:1;padding:11px 15px;border-radius:22px;border:1.5px solid var(--or-bd);background:var(--or-lt);font-family:'Nunito',sans-serif;font-size:16px;color:var(--tx);outline:none;-webkit-appearance:none;}
-.txt-in:focus{border-color:var(--or);}
-.txt-in::placeholder{color:#c4a99a;}
-.btn-snd{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--or);color:#fff;box-shadow:0 4px 14px rgba(232,84,30,0.35);}
-.btn-snd:disabled{background:#e5e7eb;box-shadow:none;cursor:default;}
-.btn-snd:active:not(:disabled){transform:scale(0.92);}
-.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;}
-.btn-mic{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--or2),var(--or));box-shadow:0 8px 24px rgba(232,84,30,0.38);position:relative;transition:all .2s;}
-.btn-mic.rec{background:linear-gradient(135deg,#f87171,#ef4444);box-shadow:0 8px 24px rgba(239,68,68,0.42);transform:scale(1.07);}
-.btn-mic.rec::before{content:'';position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(239,68,68,0.35);animation:mr 1.1s ease-out infinite;}
-@keyframes mr{0%{transform:scale(1);opacity:.8;}100%{transform:scale(1.5);opacity:0;}}
-.mic-lbl{font-size:11px;font-weight:700;color:var(--tx2);}
-.mic-lbl.act{color:#ef4444;}
+.ld-row {
+  display: flex;
+}
+
+.ld-bub {
+  background: var(--ai-bg);
+  border-radius: 4px 18px 18px 18px;
+  padding: 14px 18px;
+  display: flex;
+  gap: 5px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: db 1.2s ease-in-out infinite;
+}
+
+.dot:nth-child(2) { animation-delay: .2s; }
+.dot:nth-child(3) { animation-delay: .4s; }
+
+@keyframes db {
+  0%,100% { transform: translateY(0); opacity: .35; }
+  50% { transform: translateY(-5px); opacity: 1; }
+}
+
+.err-box {
+  background: #fef2f2;
+  color: var(--error);
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 9px 13px;
+  font-size: 12px;
+}
+
+/* Footer */
+.ft {
+  background: var(--surface);
+  border-top: 1.5px solid var(--border);
+  border-radius: 22px 22px 0 0;
+  padding: 11px 14px;
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.suggs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 9px;
+}
+
+.sg {
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 13px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border: 1.5px solid var(--primary-border);
+  border-radius: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.inp-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.txt-in {
+  flex: 1;
+  padding: 11px 15px;
+  border-radius: 22px;
+  border: 1.5px solid var(--primary-border);
+  background: var(--primary-light);
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+}
+
+.txt-in:focus {
+  border-color: var(--primary);
+}
+
+.btn-snd {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-snd:disabled {
+  background: #e5e7eb;
+  cursor: default;
+}
+
+.mic-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-mic {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  transition: all 0.2s;
+}
+
+.btn-mic.rec {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  transform: scale(1.07);
+  box-shadow: 0 0 0 6px rgba(239,68,68,0.3);
+}
+
+.mic-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.mic-lbl.act {
+  color: #ef4444;
+}
 </style>
 </head>
 <body>
 
-<!-- ── SETUP SCREEN ── -->
+<!-- Setup Screen -->
 <div id="setup">
-  <div class="setup-logo">
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
-    </svg>
-  </div>
-  <div class="setup-title">AI English Tutor</div>
-  <div class="setup-sub">Nhập Gemini API Key để bắt đầu. Key được lưu trên máy bạn, không gửi đi đâu khác.</div>
+  <div class="setup-logo"><i class="fas fa-language"></i></div>
+  <div class="setup-title">AI English Tutor Pro</div>
+  <div class="setup-sub">Nhập Gemini API Key để bắt đầu. Key được lưu trên máy bạn.</div>
   <div class="setup-card">
     <div class="setup-label">Gemini API Key</div>
-    <input class="setup-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
+    <input class="setup-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off">
     <div class="setup-hint">
       Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>
     </div>
   </div>
-  <div id="setupErr" class="setup-err" style="display:none;"></div>
+  <div id="setupErr" class="setup-err"></div>
   <button class="btn-start" onclick="startApp()">Bắt đầu luyện tập →</button>
 </div>
 
-<!-- ── MAIN APP ── -->
+<!-- Main App -->
 <div id="app" style="display:none;">
   <div class="hd">
     <div class="hd-in">
       <div class="hd-l">
-        <div class="hd-av">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-        </div>
+        <div class="hd-av"><i class="fas fa-robot"></i></div>
         <div>
-          <div class="hd-t">AI English Tutor</div>
-          <div class="hd-s">Luyện tiếng Anh cùng AI</div>
+          <div class="hd-t">AI English Tutor Pro</div>
+          <div class="hd-s">Luyện tiếng Anh toàn diện</div>
         </div>
       </div>
       <div class="hd-btns">
-        <button class="hd-btn" onclick="resetChat()" title="Cuộc trò chuyện mới">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        </button>
-        <button class="hd-btn" onclick="logout()" title="Đổi API Key">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
+        <button class="hd-btn" onclick="resetChat()" title="Cuộc trò chuyện mới"><i class="fas fa-sync-alt"></i></button>
+        <button class="hd-btn" onclick="logout()" title="Đổi API Key"><i class="fas fa-sign-out-alt"></i></button>
       </div>
     </div>
+  </div>
+
+  <!-- Control bar: speed, theme, export -->
+  <div class="ctrl-bar">
+    <div class="speed-control">
+      <label><i class="fas fa-tachometer-alt"></i> Tốc độ</label>
+      <input type="range" id="speedSlider" min="0.5" max="1.0" step="0.05" value="0.65">
+      <span class="speed-value" id="speedValue">0.65</span>
+    </div>
+    <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i> Dark</button>
+    <button class="export-pdf" id="exportPdf"><i class="fas fa-file-pdf"></i> PDF</button>
+  </div>
+
+  <!-- Topic selector -->
+  <div class="topic-bar" id="topicBar">
+    <button class="topic-btn active" data-topic="general">💬 Giao tiếp</button>
+    <button class="topic-btn" data-topic="travel">✈️ Du lịch</button>
+    <button class="topic-btn" data-topic="interview">🎤 Phỏng vấn</button>
+    <button class="topic-btn" data-topic="business">💼 Kinh doanh</button>
+    <button class="topic-btn" data-topic="daily">🏠 Hàng ngày</button>
   </div>
 
   <div class="chat" id="chat"></div>
@@ -139,15 +630,11 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
   <div class="ft">
     <div class="suggs" id="suggs"></div>
     <div class="inp-row">
-      <input class="txt-in" id="txtin" type="text" placeholder="Gõ tiếng Anh ở đây..." autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="btn-snd" id="sndbtn" disabled onclick="sendFromInput()">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
+      <input class="txt-in" id="txtin" type="text" placeholder="Gõ tiếng Anh hoặc nhấn mic..." autocomplete="off">
+      <button class="btn-snd" id="sndbtn" disabled onclick="sendFromInput()"><i class="fas fa-paper-plane"></i></button>
     </div>
     <div class="mic-wrap">
-      <button class="btn-mic" id="micbtn" onclick="toggleMic()">
-        <svg id="micsvg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-      </button>
+      <button class="btn-mic" id="micbtn" onclick="toggleMic()"><i class="fas fa-microphone" id="micIcon"></i></button>
       <span class="mic-lbl" id="miclbl">Nhấn để nói</span>
     </div>
   </div>
@@ -155,33 +642,111 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 
 <script>
 // ==================== CONFIG ====================
-// Dùng model ổn định, được Google khuyến nghị cho free tier
-const GEMINI_MODEL = 'gemma-3-27b-it';  // Hoặc 'gemini-2.0-flash-lite' nếu cần
+const GEMINI_MODEL = 'gemini-2.0-flash-lite';
 const GEMINI_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const KEY_STORE = 'tutor_gemini_key';
+const HISTORY_STORE = 'tutor_chat_history';
 
 // ==================== STATE ====================
 let API_KEY = '';
 let busy = false;
 let recording = false;
-let recognition = null;     // Web Speech API instance
+let recognition = null;
 let mid = 0;
 let suggs = ["I'm fine, thanks!", "Not bad, and you?"];
 let spkUnlock = false;
+let currentTopic = 'general';
+let chatHistory = []; // store {role, en, vi, timestamp}
 
-// DOM elements
+// DOM
 const chatEl = document.getElementById('chat');
 const suggsEl = document.getElementById('suggs');
 const inp = document.getElementById('txtin');
 const sndBtn = document.getElementById('sndbtn');
-const micBtn = document.getElementById('micbtn');
-const micLbl = document.getElementById('miclbl');
+const speedSlider = document.getElementById('speedSlider');
+const speedValue = document.getElementById('speedValue');
+const themeToggle = document.getElementById('themeToggle');
+const exportPdfBtn = document.getElementById('exportPdf');
+
+// ==================== SPEED CONTROL ====================
+let speechRate = 0.65;
+speedSlider.addEventListener('input', (e) => {
+  speechRate = parseFloat(e.target.value);
+  speedValue.textContent = speechRate.toFixed(2);
+});
+function getSpeechRate() { return speechRate; }
+
+// ==================== DARK MODE ====================
+function initDarkMode() {
+  const saved = localStorage.getItem('darkMode');
+  if (saved === 'true') document.body.classList.add('dark');
+  themeToggle.innerHTML = document.body.classList.contains('dark') ? '<i class="fas fa-sun"></i> Light' : '<i class="fas fa-moon"></i> Dark';
+}
+themeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  localStorage.setItem('darkMode', isDark);
+  themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i> Light' : '<i class="fas fa-moon"></i> Dark';
+});
+
+// ==================== EXPORT PDF ====================
+async function exportToPDF() {
+  if (chatHistory.length === 0) {
+    showErr('Chưa có hội thoại nào để xuất.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) {
+    showErr('Đang tải thư viện PDF, vui lòng thử lại sau.');
+    return;
+  }
+  const doc = new jsPDF();
+  let y = 20;
+  doc.setFontSize(16);
+  doc.text('AI English Tutor - Conversation Log', 20, y);
+  y += 10;
+  doc.setFontSize(10);
+  doc.text(`Ngày: ${new Date().toLocaleString()} | Chủ đề: ${currentTopic}`, 20, y);
+  y += 10;
+  for (const msg of chatHistory) {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+    const prefix = msg.role === 'ai' ? '🤖 Tutor: ' : '👤 You: ';
+    const lines = doc.splitTextToSize(prefix + msg.en, 170);
+    doc.text(lines, 20, y);
+    y += lines.length * 5;
+    if (msg.vi && msg.role === 'ai') {
+      const viLines = doc.splitTextToSize(`  (${msg.vi})`, 170);
+      doc.text(viLines, 20, y);
+      y += viLines.length * 4;
+    }
+    y += 4;
+  }
+  doc.save(`english_tutor_${Date.now()}.pdf`);
+}
+
+// Load jspdf dynamically
+function loadJSPDF() {
+  if (window.jspdf) return Promise.resolve();
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => resolve();
+    document.head.appendChild(script);
+  });
+}
+exportPdfBtn.addEventListener('click', async () => {
+  await loadJSPDF();
+  exportToPDF();
+});
 
 // ==================== SETUP ====================
 function startApp() {
   const key = document.getElementById('keyInput').value.trim();
   if (!key.startsWith('AIza') || key.length < 30) {
-    showSetupErr('Key không hợp lệ. Key Gemini bắt đầu bằng "AIza..." và dài hơn 30 ký tự.');
+    showSetupErr('Key không hợp lệ.');
     return;
   }
   API_KEY = key;
@@ -189,12 +754,14 @@ function startApp() {
   document.getElementById('setup').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   initChat();
+  loadHistory();
 }
 
 function showSetupErr(msg) {
   const el = document.getElementById('setupErr');
-  el.textContent = msg; el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 5000);
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
 }
 
 function logout() {
@@ -205,7 +772,6 @@ function logout() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('setup').style.display = 'flex';
   document.getElementById('keyInput').value = '';
-  document.getElementById('setupErr').style.display = 'none';
 }
 
 // Auto-login
@@ -217,19 +783,38 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('setup').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     initChat();
+    loadHistory();
   }
+  initDarkMode();
   document.getElementById('keyInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') startApp();
   });
 });
 
-// ==================== CHAT INIT ====================
+// Topic selection
+document.querySelectorAll('.topic-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTopic = btn.dataset.topic;
+    addSystemMessage(`Chuyển sang chủ đề: ${btn.innerText}. Hãy trò chuyện theo chủ đề này.`);
+  });
+});
+
+function addSystemMessage(msg) {
+  addMsg('ai', { en: msg, vi: '' }, false);
+}
+
+// ==================== CHAT INIT & HISTORY ====================
 function initChat() {
-  chatEl.innerHTML = ''; mid = 0; busy = false; spkUnlock = false;
+  chatEl.innerHTML = '';
+  mid = 0;
+  busy = false;
+  chatHistory = [];
   suggs = ["I'm fine, thanks!", "Not bad, and you?"];
   addMsg('ai', {
-    en: "Hello! I'm your AI English tutor. Let's practice! How are you today?",
-    vi: "Xin chào! Tôi là gia sư AI của bạn. Hôm nay bạn thế nào?"
+    en: `Hello! I'm your AI English tutor. Let's practice ${currentTopic} topic. How are you today?`,
+    vi: `Xin chào! Tôi là gia sư AI. Hôm nay bạn thế nào? Chủ đề: ${currentTopic}.`
   });
   renderSuggs(suggs);
   inp.addEventListener('input', () => { sndBtn.disabled = !inp.value.trim() || busy; });
@@ -237,7 +822,27 @@ function initChat() {
   inp.addEventListener('focus', unlockSpeech);
 }
 
-// Unlock speech synthesis on iOS (required before first speak)
+function saveHistory() {
+  localStorage.setItem(HISTORY_STORE, JSON.stringify(chatHistory));
+}
+
+function loadHistory() {
+  const saved = localStorage.getItem(HISTORY_STORE);
+  if (saved) {
+    try {
+      const old = JSON.parse(saved);
+      if (old.length > 0) {
+        chatHistory = old;
+        chatEl.innerHTML = '';
+        old.forEach(msg => {
+          addMsgToUI(msg.role, { en: msg.en, vi: msg.vi }, false);
+        });
+        scroll();
+      }
+    } catch(e) {}
+  }
+}
+
 function unlockSpeech() {
   if (spkUnlock || !window.speechSynthesis) return;
   const u = new SpeechSynthesisUtterance('');
@@ -252,16 +857,16 @@ function speakTxt(t) {
   setTimeout(() => {
     const u = new SpeechSynthesisUtterance(t);
     u.lang = 'en-US';
-    u.rate = 0.85;
+    u.rate = getSpeechRate();
     window.speechSynthesis.speak(u);
   }, 100);
 }
 
 // ==================== GEMINI API ====================
 async function callGemini(userMsg) {
-  const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
-Return ONLY a raw JSON object, no markdown, no code blocks, no extra text:
-{"en":"<English reply>","vi":"<Vietnamese translation>","tip":"<one grammar/vocab tip in Vietnamese, max 15 words>","sug":["<suggestion 1>","<suggestion 2>"]}
+  const prompt = `You are a friendly English tutor for Vietnamese learners. Topic: ${currentTopic}. Keep replies short (1-3 sentences).
+Return ONLY a raw JSON object, no markdown:
+{"en":"<English reply>","vi":"<Vietnamese translation>","sug":["<suggestion1>","<suggestion2>"]}
 Student: ${userMsg}`;
 
   const res = await fetch(`${GEMINI_BASE}?key=${API_KEY}`, {
@@ -269,25 +874,21 @@ Student: ${userMsg}`;
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
+      generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
     })
   });
-
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     let msg = errData?.error?.message || `HTTP ${res.status}`;
-    if (res.status === 403 || res.status === 401) {
-      throw new Error('API key không hợp lệ hoặc chưa được bật. Hãy logout và nhập lại.');
-    }
-    if (res.status === 429) throw new Error('Hết quota dùng thử. Vui lòng đợi.');
+    if (res.status === 403 || res.status === 401) throw new Error('API key không hợp lệ');
+    if (res.status === 429) throw new Error('Hết quota dùng thử');
     throw new Error(msg);
   }
-
   const data = await res.json();
   let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
   raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
   const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('AI trả về sai định dạng.');
+  if (!match) throw new Error('AI trả về sai định dạng');
   return JSON.parse(match[0]);
 }
 
@@ -296,14 +897,16 @@ async function sendMsg(txt) {
   const v = (txt || '').trim();
   if (!v || busy) return;
   unlockSpeech();
-  inp.value = ''; sndBtn.disabled = true;
-  setBusy(true); removeErr();
+  inp.value = '';
+  sndBtn.disabled = true;
+  setBusy(true);
+  removeErr();
   addMsg('user', { en: v });
   const lid = addLoading();
   try {
     const res = await callGemini(v);
     removeEl(lid);
-    addMsg('ai', { en: res.en, vi: res.vi, tip: res.tip });
+    addMsg('ai', { en: res.en, vi: res.vi });
     if (res.sug?.length) { suggs = res.sug; renderSuggs(suggs); }
     speakTxt(res.en);
   } catch(e) {
@@ -311,121 +914,100 @@ async function sendMsg(txt) {
     let errMsg = e.message;
     if (errMsg.includes('API key')) errMsg = '🔑 Lỗi API key. Hãy logout và nhập lại.';
     else if (errMsg.includes('quota')) errMsg = '📉 Hết quota dùng thử.';
-    else if (errMsg.includes('network')) errMsg = '📡 Mất kết nối mạng.';
+    else errMsg = `⚠️ ${errMsg}`;
     showErr(errMsg);
   } finally {
     setBusy(false);
   }
 }
+
 function sendFromInput() { sendMsg(inp.value); }
 
-// ==================== MICROPHONE (FIXED FOR iOS) ====================
-function toggleMic() {
-  unlockSpeech();  // cần gesture trước khi mic hoạt động trên iOS
-  
-  if (recording) {
-    stopMic();
+// ==================== PRONUNCIATION PRACTICE ====================
+async function practicePronunciation(sentence, messageId) {
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+    showErr('Trình duyệt không hỗ trợ luyện phát âm.');
     return;
   }
-  
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showErr('Trình duyệt không hỗ trợ nhận dạng giọng nói. Hãy dùng Safari iOS 14.5+ hoặc Chrome.');
-    return;
-  }
+  const recog = new SpeechRecognition();
+  recog.lang = 'en-US';
+  recog.interimResults = false;
+  recog.maxAlternatives = 1;
   
-  // Tạo mới mỗi lần để tránh lỗi cũ
-  recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+  showErr(`🎤 Hãy đọc câu: "${sentence}"`);
+  recog.start();
   
-  recognition.onstart = () => {
-    recording = true;
-    micBtn.classList.add('rec');
-    micLbl.textContent = 'Đang nghe...';
-    micLbl.classList.add('act');
+  recog.onresult = (event) => {
+    const spoken = event.results[0][0].transcript.toLowerCase();
+    const expected = sentence.toLowerCase().replace(/[^\w\s]/g, '');
+    const spokenNorm = spoken.replace(/[^\w\s]/g, '');
+    // simple similarity: word overlap
+    const expectedWords = expected.split(/\s+/);
+    const spokenWords = spokenNorm.split(/\s+/);
+    const common = expectedWords.filter(w => spokenWords.includes(w)).length;
+    const score = Math.round((common / expectedWords.length) * 100);
+    let feedback = '';
+    if (score >= 80) feedback = `Tuyệt vời! Độ chính xác ${score}% 🎉`;
+    else if (score >= 50) feedback = `Khá tốt! ${score}% chính xác. Cố gắng hơn nhé.`;
+    else feedback = `Cần luyện thêm. Độ chính xác ${score}%. Hãy nghe lại câu mẫu.`;
+    showErr(feedback);
+    speakTxt(sentence); // play correct pronunciation again
   };
-  
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    if (transcript && transcript.trim()) {
-      sendMsg(transcript);
-    } else {
-      showErr('Không nhận diện được giọng nói, thử lại.');
-    }
-    stopMic(); // tự động dừng sau khi có kết quả
+  recog.onerror = () => {
+    showErr('Không nhận diện được giọng nói, thử lại.');
   };
-  
-  recognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-    let errorMsg = '';
-    switch(event.error) {
-      case 'not-allowed':
-        errorMsg = 'Chưa cấp quyền mic. Vào Settings → Safari → Microphone → Allow.';
-        break;
-      case 'no-speech':
-        errorMsg = 'Không nghe thấy giọng nói. Hãy thử lại.';
-        break;
-      case 'audio-capture':
-        errorMsg = 'Không truy cập được microphone.';
-        break;
-      default:
-        errorMsg = `Lỗi mic: ${event.error}`;
-    }
-    showErr(errorMsg);
-    stopMic();
-  };
-  
-  recognition.onend = () => {
-    stopMic();
-  };
-  
-  try {
-    recognition.start();
-  } catch(e) {
-    showErr('Không thể khởi động mic: ' + e.message);
-    stopMic();
-  }
-}
-
-function stopMic() {
-  if (recognition) {
-    try { recognition.abort(); } catch(e) {}
-    recognition = null;
-  }
-  recording = false;
-  micBtn.classList.remove('rec');
-  micLbl.textContent = 'Nhấn để nói';
-  micLbl.classList.remove('act');
 }
 
 // ==================== UI HELPERS ====================
-function addMsg(role, data) {
-  const id = 'm'+(++mid), div = document.createElement('div');
-  div.className = 'row '+role; div.id = id;
-  const spk = role==='ai'
-    ? `<button class="btn-spk" onclick="speakTxt(${JSON.stringify(data.en)})" title="Nghe lại">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-       </button>` : '';
-  const vi  = data.vi  ? `<div class="bub-vi">${esc(data.vi)}</div>`  : '';
-  const tip = data.tip ? `<div class="bub-tip">💡 ${esc(data.tip)}</div>` : '';
-  div.innerHTML = `<div class="bub ${role}"><div class="bub-hd"><span class="bub-en">${esc(data.en)}</span>${spk}</div>${vi}${tip}</div>`;
-  chatEl.appendChild(div); scroll(); return id;
+function addMsg(role, data, save = true) {
+  const id = 'm'+(++mid);
+  const div = document.createElement('div');
+  div.className = 'row '+role;
+  div.id = id;
+  const spk = role==='ai' ? `<button class="btn-spk" onclick="speakTxt(${JSON.stringify(data.en)})" title="Nghe lại"><i class="fas fa-volume-up"></i></button>` : '';
+  const pronounceBtn = role==='ai' ? `<button class="pronounce-btn" onclick="practicePronunciation(${JSON.stringify(data.en)}, '${id}')"><i class="fas fa-microphone-alt"></i> Luyện phát âm</button>` : '';
+  const viHtml = data.vi ? `<div class="bub-vi">${esc(data.vi)}</div>` : '';
+  div.innerHTML = `<div class="bub ${role}"><div class="bub-hd"><span class="bub-en">${esc(data.en)}</span>${spk}</div>${viHtml}${pronounceBtn}</div>`;
+  chatEl.appendChild(div);
+  scroll();
+  if (save && role !== 'system') {
+    chatHistory.push({ role, en: data.en, vi: data.vi || '', timestamp: Date.now() });
+    saveHistory();
+  }
+  return id;
 }
+
+function addMsgToUI(role, data, save = false) {
+  const div = document.createElement('div');
+  div.className = 'row '+role;
+  const spk = role==='ai' ? `<button class="btn-spk" onclick="speakTxt(${JSON.stringify(data.en)})"><i class="fas fa-volume-up"></i></button>` : '';
+  const pronounceBtn = role==='ai' ? `<button class="pronounce-btn" onclick="practicePronunciation(${JSON.stringify(data.en)}, '')"><i class="fas fa-microphone-alt"></i> Luyện phát âm</button>` : '';
+  const viHtml = data.vi ? `<div class="bub-vi">${esc(data.vi)}</div>` : '';
+  div.innerHTML = `<div class="bub ${role}"><div class="bub-hd"><span class="bub-en">${esc(data.en)}</span>${spk}</div>${viHtml}${pronounceBtn}</div>`;
+  chatEl.appendChild(div);
+}
+
 function addLoading() {
-  const id='l'+(++mid), div=document.createElement('div');
-  div.className='ld-row'; div.id=id;
+  const id='l'+(++mid);
+  const div=document.createElement('div');
+  div.className='ld-row';
+  div.id=id;
   div.innerHTML=`<div class="ld-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  chatEl.appendChild(div); scroll(); return id;
+  chatEl.appendChild(div);
+  scroll();
+  return id;
 }
+
 function removeEl(id) { document.getElementById(id)?.remove(); }
 function showErr(msg) {
   removeErr();
   const d = document.createElement('div');
-  d.className='err-box'; d.id='errbox'; d.textContent='⚠️ '+msg;
-  chatEl.appendChild(d); scroll();
+  d.className='err-box';
+  d.id='errbox';
+  d.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${esc(msg)}`;
+  chatEl.appendChild(d);
+  scroll();
   setTimeout(() => removeErr(), 6000);
 }
 function removeErr() { document.getElementById('errbox')?.remove(); }
@@ -433,7 +1015,9 @@ function renderSuggs(list) {
   suggsEl.innerHTML = '';
   list.forEach(s => {
     const b = document.createElement('button');
-    b.className='sg'; b.textContent=s; b.disabled=busy;
+    b.className='sg';
+    b.textContent = s;
+    b.disabled = busy;
     b.onclick = () => sendMsg(s);
     suggsEl.appendChild(b);
   });
@@ -445,7 +1029,51 @@ function setBusy(v) {
 }
 function scroll() { requestAnimationFrame(()=>{ chatEl.scrollTop = chatEl.scrollHeight; }); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function resetChat() { window.speechSynthesis?.cancel(); stopMic(); initChat(); }
+function resetChat() {
+  window.speechSynthesis?.cancel();
+  stopMic();
+  initChat();
+  chatHistory = [];
+  saveHistory();
+}
+function stopMic() {
+  if (recognition) { try { recognition.abort(); } catch(e) {} recognition = null; }
+  recording = false;
+  const micBtn = document.getElementById('micbtn');
+  const micLbl = document.getElementById('miclbl');
+  if (micBtn) micBtn.classList.remove('rec');
+  if (micLbl) { micLbl.textContent = 'Nhấn để nói'; micLbl.classList.remove('act'); }
+}
+function toggleMic() {
+  unlockSpeech();
+  if (recording) { stopMic(); return; }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { showErr('Trình duyệt không hỗ trợ mic.'); return; }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.onstart = () => {
+    recording = true;
+    const micBtn = document.getElementById('micbtn');
+    const micLbl = document.getElementById('miclbl');
+    micBtn.classList.add('rec');
+    micLbl.textContent = 'Đang nghe...';
+    micLbl.classList.add('act');
+  };
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    if (transcript.trim()) sendMsg(transcript);
+    else showErr('Không nhận diện được.');
+    stopMic();
+  };
+  recognition.onerror = (event) => {
+    showErr(`Lỗi mic: ${event.error}`);
+    stopMic();
+  };
+  recognition.onend = () => stopMic();
+  recognition.start();
+}
 </script>
 </body>
 </html>
