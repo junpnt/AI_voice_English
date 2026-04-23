@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>AI English Tutor</title>
+<title>AI English Tutor Pro | Học nói tiếng Anh</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -59,6 +59,9 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .bub-hd{display:flex;align-items:flex-start;gap:5px;}
 .btn-spk{background:none;border:none;cursor:pointer;color:var(--or);padding:1px;flex-shrink:0;opacity:0.7;}
 .btn-spk:active{opacity:1;}
+.suggestion-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.suggestion-chip{background:#fff0eb;border:1px solid var(--or-bd);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--or-dk);cursor:pointer;transition:0.2s;}
+.suggestion-chip:active{background:var(--or-bd);}
 /* Loading */
 .ld-row{display:flex;}.ld-bub{background:var(--ai);border-radius:4px 18px 18px 18px;padding:14px 18px;display:flex;gap:5px;align-items:center;}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--or);animation:db 1.2s ease-in-out infinite;}
@@ -67,7 +70,7 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .err-box{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:12px;padding:9px 13px;font-size:12px;line-height:1.5;}
 /* ── FOOTER ── */
 .ft{background:var(--sur);border-top:1.5px solid var(--bd);border-radius:22px 22px 0 0;padding:11px 14px;padding-bottom:max(18px,var(--sp-bot));box-shadow:0 -4px 20px rgba(0,0,0,0.05);flex-shrink:0;}
-.suggs{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;}
+.suggs{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;margin-bottom:8px;}
 .suggs::-webkit-scrollbar{display:none;}
 .sg{white-space:nowrap;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 13px;background:var(--or-lt);color:var(--or-dk);border:1.5px solid var(--or-bd);border-radius:20px;cursor:pointer;flex-shrink:0;}
 .sg:active{background:var(--or-bd);}.sg:disabled{opacity:.4;cursor:default;}
@@ -78,18 +81,19 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 .btn-snd{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--or);color:#fff;box-shadow:0 4px 14px rgba(232,84,30,0.35);}
 .btn-snd:disabled{background:#e5e7eb;box-shadow:none;cursor:default;}
 .btn-snd:active:not(:disabled){transform:scale(0.92);}
-.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:5px;}
 .btn-mic{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--or2),var(--or));box-shadow:0 8px 24px rgba(232,84,30,0.38);position:relative;transition:all .2s;}
 .btn-mic.rec{background:linear-gradient(135deg,#f87171,#ef4444);box-shadow:0 8px 24px rgba(239,68,68,0.42);transform:scale(1.07);}
 .btn-mic.rec::before{content:'';position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(239,68,68,0.35);animation:mr 1.1s ease-out infinite;}
 @keyframes mr{0%{transform:scale(1);opacity:.8;}100%{transform:scale(1.5);opacity:0;}}
 .mic-lbl{font-size:11px;font-weight:700;color:var(--tx2);}
 .mic-lbl.act{color:#ef4444;}
+.suggestion-btn{background:rgba(255,255,255,0.2);border:none;border-radius:20px;padding:6px 12px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;}
+.suggestion-btn:active{background:rgba(255,255,255,0.3);}
 </style>
 </head>
 <body>
 
-<!-- ── SETUP SCREEN ── -->
 <div id="setup">
   <div class="setup-logo">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -97,20 +101,20 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
       <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
     </svg>
   </div>
-  <div class="setup-title">AI English Tutor</div>
-  <div class="setup-sub">Nhập Gemini API Key để bắt đầu. Key được lưu trên máy bạn, không gửi đi đâu khác.</div>
+  <div class="setup-title">AI English Tutor Pro</div>
+  <div class="setup-sub">Nhập Gemini API Key (hỗ trợ Gemma, Gemini 2.0). Key được lưu trên máy bạn.</div>
   <div class="setup-card">
-    <div class="setup-label">Gemini API Key</div>
-    <input class="setup-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
+    <div class="setup-label">API Key</div>
+    <input class="setup-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off">
     <div class="setup-hint">
-      Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>
+      Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a><br>
+      <span style="font-size:10px;">✅ Khuyên dùng model: gemma-3-27b-it (hạn mức cao)</span>
     </div>
   </div>
   <div id="setupErr" class="setup-err" style="display:none;"></div>
   <button class="btn-start" onclick="startApp()">Bắt đầu luyện tập →</button>
 </div>
 
-<!-- ── MAIN APP ── -->
 <div id="app" style="display:none;">
   <div class="hd">
     <div class="hd-in">
@@ -119,16 +123,19 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
         </div>
         <div>
-          <div class="hd-t">AI English Tutor</div>
-          <div class="hd-s">Luyện tiếng Anh cùng AI</div>
+          <div class="hd-t">AI English Tutor Pro</div>
+          <div class="hd-s">💡 Tự động gợi ý câu hỏi</div>
         </div>
       </div>
       <div class="hd-btns">
         <button class="hd-btn" onclick="resetChat()" title="Cuộc trò chuyện mới">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button class="hd-btn" onclick="clearHistory()" title="Xóa lịch sử">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
         </button>
         <button class="hd-btn" onclick="logout()" title="Đổi API Key">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
     </div>
@@ -139,15 +146,18 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
   <div class="ft">
     <div class="suggs" id="suggs"></div>
     <div class="inp-row">
-      <input class="txt-in" id="txtin" type="text" placeholder="Gõ tiếng Anh ở đây..." autocomplete="off" autocorrect="off" spellcheck="false">
+      <input class="txt-in" id="txtin" type="text" placeholder="Nhập tiếng Anh hoặc chọn gợi ý..." autocomplete="off">
       <button class="btn-snd" id="sndbtn" disabled onclick="sendFromInput()">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
     <div class="mic-wrap">
-      <button class="btn-mic" id="micbtn" onclick="toggleMic()">
-        <svg id="micsvg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-      </button>
+      <div style="display:flex; gap:12px; align-items:center; justify-content:center; width:100%;">
+        <button class="suggestion-btn" id="suggestBtn" onclick="requestSuggestions()">💡 Gợi ý câu hỏi</button>
+        <button class="btn-mic" id="micbtn" onclick="toggleMic()">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+        </button>
+      </div>
       <span class="mic-lbl" id="miclbl">Nhấn để nói</span>
     </div>
   </div>
@@ -155,21 +165,20 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);height:1
 
 <script>
 // ==================== CONFIG ====================
-// Dùng model ổn định, được Google khuyến nghị cho free tier
-const GEMINI_MODEL = 'gemma-3-27b-it';  // Hoặc 'gemini-2.0-flash-lite' nếu cần
+// Dùng model Gemma-3-27b-it (hạn mức cao, 3000 requests/ngày) hoặc gemini-2.0-flash
+const GEMINI_MODEL = 'gemma-3-27b-it';  // hoặc 'gemini-2.0-flash'
 const GEMINI_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const KEY_STORE = 'tutor_gemini_key';
+const HISTORY_STORE = 'tutor_chat_history';
 
-// ==================== STATE ====================
 let API_KEY = '';
 let busy = false;
 let recording = false;
-let recognition = null;     // Web Speech API instance
+let recognition = null;
 let mid = 0;
-let suggs = ["I'm fine, thanks!", "Not bad, and you?"];
-let spkUnlock = false;
+let currentSuggestions = []; // lưu gợi ý từ AI trả về
 
-// DOM elements
+// DOM
 const chatEl = document.getElementById('chat');
 const suggsEl = document.getElementById('suggs');
 const inp = document.getElementById('txtin');
@@ -181,20 +190,29 @@ const micLbl = document.getElementById('miclbl');
 function startApp() {
   const key = document.getElementById('keyInput').value.trim();
   if (!key.startsWith('AIza') || key.length < 30) {
-    showSetupErr('Key không hợp lệ. Key Gemini bắt đầu bằng "AIza..." và dài hơn 30 ký tự.');
+    showSetupErr('Key không hợp lệ (phải bắt đầu bằng AIza... và dài >30 ký tự)');
     return;
   }
   API_KEY = key;
   localStorage.setItem(KEY_STORE, key);
   document.getElementById('setup').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  initChat();
+  loadHistory();
+  if (chatEl.children.length === 0) {
+    addMsg('ai', {
+      en: "Hello! I'm your AI English tutor. Let's practice! How are you today?",
+      vi: "Xin chào! Tôi là gia sư AI của bạn. Hôm nay bạn thế nào?",
+      tip: "Hãy thử trả lời bằng tiếng Anh, tôi sẽ sửa lỗi và gợi ý câu hỏi tiếp theo."
+    });
+  }
+  initEventListeners();
+  renderSuggs([]);
 }
 
 function showSetupErr(msg) {
   const el = document.getElementById('setupErr');
   el.textContent = msg; el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 5000);
+  setTimeout(() => el.style.display = 'none', 5000);
 }
 
 function logout() {
@@ -205,39 +223,216 @@ function logout() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('setup').style.display = 'flex';
   document.getElementById('keyInput').value = '';
-  document.getElementById('setupErr').style.display = 'none';
 }
 
-// Auto-login
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem(KEY_STORE);
-  if (saved) {
-    API_KEY = saved;
-    document.getElementById('keyInput').value = saved;
-    document.getElementById('setup').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    initChat();
-  }
-  document.getElementById('keyInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') startApp();
-  });
-});
-
-// ==================== CHAT INIT ====================
-function initChat() {
-  chatEl.innerHTML = ''; mid = 0; busy = false; spkUnlock = false;
-  suggs = ["I'm fine, thanks!", "Not bad, and you?"];
-  addMsg('ai', {
-    en: "Hello! I'm your AI English tutor. Let's practice! How are you today?",
-    vi: "Xin chào! Tôi là gia sư AI của bạn. Hôm nay bạn thế nào?"
-  });
-  renderSuggs(suggs);
+function initEventListeners() {
   inp.addEventListener('input', () => { sndBtn.disabled = !inp.value.trim() || busy; });
-  inp.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendFromInput(); } });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFromInput(); } });
   inp.addEventListener('focus', unlockSpeech);
 }
 
-// Unlock speech synthesis on iOS (required before first speak)
+// ==================== LƯU LỊCH SỬ ====================
+function saveHistory() {
+  const messages = [];
+  for (let i = 0; i < chatEl.children.length; i++) {
+    const row = chatEl.children[i];
+    if (row.classList.contains('row')) {
+      const role = row.classList.contains('user') ? 'user' : 'ai';
+      const bubble = row.querySelector('.bub');
+      if (bubble) {
+        const enSpan = bubble.querySelector('.bub-en');
+        const viDiv = bubble.querySelector('.bub-vi');
+        const tipDiv = bubble.querySelector('.bub-tip');
+        messages.push({
+          role,
+          en: enSpan ? enSpan.innerText : '',
+          vi: viDiv ? viDiv.innerText.replace('💡 ', '') : '',
+          tip: tipDiv ? tipDiv.innerText.replace('💡 ', '') : ''
+        });
+      }
+    }
+  }
+  localStorage.setItem(HISTORY_STORE, JSON.stringify(messages));
+}
+
+function loadHistory() {
+  const saved = localStorage.getItem(HISTORY_STORE);
+  if (!saved) return;
+  try {
+    const messages = JSON.parse(saved);
+    for (const msg of messages) {
+      addMsg(msg.role, { en: msg.en, vi: msg.vi, tip: msg.tip }, false);
+    }
+    scroll();
+  } catch(e) {}
+}
+
+function clearHistory() {
+  if (confirm('Xóa toàn bộ lịch sử trò chuyện?')) {
+    localStorage.removeItem(HISTORY_STORE);
+    resetChat();
+  }
+}
+
+// ==================== CHAT UI ====================
+function addMsg(role, data, save = true) {
+  const id = 'm'+(++mid);
+  const div = document.createElement('div');
+  div.className = `row ${role}`;
+  div.id = id;
+  const spk = role === 'ai' ? `<button class="btn-spk" onclick="speakTxt(${JSON.stringify(data.en)})" title="Nghe lại">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+    </button>` : '';
+  const vi = data.vi ? `<div class="bub-vi">${esc(data.vi)}</div>` : '';
+  const tip = data.tip ? `<div class="bub-tip">💡 ${esc(data.tip)}</div>` : '';
+  div.innerHTML = `<div class="bub ${role}"><div class="bub-hd"><span class="bub-en">${esc(data.en)}</span>${spk}</div>${vi}${tip}</div>`;
+  chatEl.appendChild(div);
+  if (save) saveHistory();
+  scroll();
+  return id;
+}
+
+function addLoading() {
+  const id = 'l'+(++mid);
+  const div = document.createElement('div');
+  div.className = 'ld-row';
+  div.id = id;
+  div.innerHTML = `<div class="ld-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  chatEl.appendChild(div);
+  scroll();
+  return id;
+}
+
+function removeEl(id) { document.getElementById(id)?.remove(); }
+
+function showErr(msg) {
+  const d = document.createElement('div');
+  d.className = 'err-box';
+  d.textContent = '⚠️ ' + msg;
+  chatEl.appendChild(d);
+  scroll();
+  setTimeout(() => d.remove(), 5000);
+}
+
+function scroll() { requestAnimationFrame(() => { chatEl.scrollTop = chatEl.scrollHeight; }); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ==================== GỢI Ý CÂU ====================
+function renderSuggs(suggestions) {
+  suggsEl.innerHTML = '';
+  if (!suggestions || suggestions.length === 0) {
+    // Hiển thị vài gợi ý mặc định nếu chưa có
+    suggestions = ["What do you like to do in your free time?", "Tell me about your family.", "What's your favorite food?"];
+  }
+  currentSuggestions = suggestions.slice(0, 5);
+  currentSuggestions.forEach(s => {
+    const chip = document.createElement('button');
+    chip.className = 'sg';
+    chip.textContent = s;
+    chip.disabled = busy;
+    chip.onclick = () => sendMsg(s);
+    suggsEl.appendChild(chip);
+  });
+}
+
+// Yêu cầu AI gợi ý chủ đề/câu hỏi riêng
+async function requestSuggestions() {
+  if (busy) { showErr('Đang xử lý, hãy đợi.'); return; }
+  unlockSpeech();
+  const lid = addLoading();
+  try {
+    const prompt = `You are an English tutor. The user needs conversation ideas. Suggest 3 simple English questions (each short, for beginners) that they can ask you. Return ONLY a JSON array: ["question 1", "question 2", "question 3"]`;
+    const res = await fetch(`${GEMINI_BASE}?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.8, maxOutputTokens: 100 }
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    let raw = data.candidates[0].content.parts[0].text;
+    raw = raw.replace(/```json|```/g, '').trim();
+    const suggestions = JSON.parse(raw);
+    if (Array.isArray(suggestions)) {
+      renderSuggs(suggestions);
+      showErr('✨ Đã cập nhật gợi ý câu hỏi mới!');
+    } else throw new Error();
+  } catch(e) {
+    showErr('Không lấy được gợi ý, hãy thử lại.');
+  } finally {
+    removeEl(lid);
+  }
+}
+
+// ==================== GEMINI CALL ====================
+async function callGemini(userMsg) {
+  const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-2 sentences). Always respond in JSON:
+{
+  "en": "your English reply",
+  "vi": "Vietnamese translation",
+  "tip": "short grammar tip (max 10 words)",
+  "suggestions": ["question 1", "question 2"]  // two simple follow-up questions for the user
+}
+Student message: ${userMsg}`;
+
+  const res = await fetch(`${GEMINI_BASE}?key=${API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 429) throw new Error('Hết quota dùng thử. Hãy thử model gemma-3-27b-it hoặc đợi ngày mai.');
+    if (res.status === 403) throw new Error('API key không hợp lệ hoặc chưa bật API.');
+    throw new Error(err.error?.message || 'Lỗi kết nối AI');
+  }
+  const data = await res.json();
+  let raw = data.candidates[0].content.parts[0].text;
+  raw = raw.replace(/```json|```/g, '').trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('AI phản hồi sai định dạng');
+  return JSON.parse(match[0]);
+}
+
+// ==================== SEND MESSAGE ====================
+async function sendMsg(txt) {
+  const v = txt.trim();
+  if (!v || busy) return;
+  unlockSpeech();
+  inp.value = '';
+  sndBtn.disabled = true;
+  busy = true;
+  removeErr();
+  addMsg('user', { en: v });
+  const lid = addLoading();
+  try {
+    const res = await callGemini(v);
+    removeEl(lid);
+    addMsg('ai', { en: res.en, vi: res.vi, tip: res.tip });
+    if (res.suggestions && Array.isArray(res.suggestions)) {
+      renderSuggs(res.suggestions);
+    } else {
+      // fallback: giữ lại gợi ý cũ
+    }
+    speakTxt(res.en);
+  } catch(e) {
+    removeEl(lid);
+    showErr(e.message);
+  } finally {
+    busy = false;
+    sndBtn.disabled = !inp.value.trim();
+  }
+}
+
+function sendFromInput() { sendMsg(inp.value); }
+
+// ==================== SPEECH & MIC ====================
+let spkUnlock = false;
 function unlockSpeech() {
   if (spkUnlock || !window.speechSynthesis) return;
   const u = new SpeechSynthesisUtterance('');
@@ -257,195 +452,83 @@ function speakTxt(t) {
   }, 100);
 }
 
-// ==================== GEMINI API ====================
-async function callGemini(userMsg) {
-  const prompt = `You are a friendly English tutor for Vietnamese learners. Keep replies short (1-3 sentences).
-Return ONLY a raw JSON object, no markdown, no code blocks, no extra text:
-{"en":"<English reply>","vi":"<Vietnamese translation>","tip":"<one grammar/vocab tip in Vietnamese, max 15 words>","sug":["<suggestion 1>","<suggestion 2>"]}
-Student: ${userMsg}`;
-
-  const res = await fetch(`${GEMINI_BASE}?key=${API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
-    })
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    let msg = errData?.error?.message || `HTTP ${res.status}`;
-    if (res.status === 403 || res.status === 401) {
-      throw new Error('API key không hợp lệ hoặc chưa được bật. Hãy logout và nhập lại.');
-    }
-    if (res.status === 429) throw new Error('Hết quota dùng thử. Vui lòng đợi.');
-    throw new Error(msg);
-  }
-
-  const data = await res.json();
-  let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('AI trả về sai định dạng.');
-  return JSON.parse(match[0]);
-}
-
-// ==================== SEND MESSAGE ====================
-async function sendMsg(txt) {
-  const v = (txt || '').trim();
-  if (!v || busy) return;
-  unlockSpeech();
-  inp.value = ''; sndBtn.disabled = true;
-  setBusy(true); removeErr();
-  addMsg('user', { en: v });
-  const lid = addLoading();
-  try {
-    const res = await callGemini(v);
-    removeEl(lid);
-    addMsg('ai', { en: res.en, vi: res.vi, tip: res.tip });
-    if (res.sug?.length) { suggs = res.sug; renderSuggs(suggs); }
-    speakTxt(res.en);
-  } catch(e) {
-    removeEl(lid);
-    let errMsg = e.message;
-    if (errMsg.includes('API key')) errMsg = '🔑 Lỗi API key. Hãy logout và nhập lại.';
-    else if (errMsg.includes('quota')) errMsg = '📉 Hết quota dùng thử.';
-    else if (errMsg.includes('network')) errMsg = '📡 Mất kết nối mạng.';
-    showErr(errMsg);
-  } finally {
-    setBusy(false);
-  }
-}
-function sendFromInput() { sendMsg(inp.value); }
-
-// ==================== MICROPHONE (FIXED FOR iOS) ====================
 function toggleMic() {
-  unlockSpeech();  // cần gesture trước khi mic hoạt động trên iOS
-  
-  if (recording) {
-    stopMic();
-    return;
-  }
-  
+  unlockSpeech();
+  if (recording) { stopMic(); return; }
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showErr('Trình duyệt không hỗ trợ nhận dạng giọng nói. Hãy dùng Safari iOS 14.5+ hoặc Chrome.');
-    return;
-  }
-  
-  // Tạo mới mỗi lần để tránh lỗi cũ
+  if (!SpeechRecognition) { showErr('Trình duyệt không hỗ trợ nhận dạng giọng nói.'); return; }
   recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
   recognition.continuous = false;
   recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-  
   recognition.onstart = () => {
     recording = true;
     micBtn.classList.add('rec');
     micLbl.textContent = 'Đang nghe...';
     micLbl.classList.add('act');
   };
-  
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    if (transcript && transcript.trim()) {
-      sendMsg(transcript);
-    } else {
-      showErr('Không nhận diện được giọng nói, thử lại.');
-    }
-    stopMic(); // tự động dừng sau khi có kết quả
-  };
-  
-  recognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-    let errorMsg = '';
-    switch(event.error) {
-      case 'not-allowed':
-        errorMsg = 'Chưa cấp quyền mic. Vào Settings → Safari → Microphone → Allow.';
-        break;
-      case 'no-speech':
-        errorMsg = 'Không nghe thấy giọng nói. Hãy thử lại.';
-        break;
-      case 'audio-capture':
-        errorMsg = 'Không truy cập được microphone.';
-        break;
-      default:
-        errorMsg = `Lỗi mic: ${event.error}`;
-    }
-    showErr(errorMsg);
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    if (transcript.trim()) sendMsg(transcript);
+    else showErr('Không nhận diện được giọng nói.');
     stopMic();
   };
-  
-  recognition.onend = () => {
+  recognition.onerror = (e) => {
+    let msg = '';
+    if (e.error === 'not-allowed') msg = 'Chưa cấp quyền mic. Vào Settings → Safari → Microphone → Allow.';
+    else if (e.error === 'no-speech') msg = 'Không nghe thấy giọng nói.';
+    else msg = `Lỗi mic: ${e.error}`;
+    showErr(msg);
     stopMic();
   };
-  
-  try {
-    recognition.start();
-  } catch(e) {
-    showErr('Không thể khởi động mic: ' + e.message);
-    stopMic();
-  }
+  recognition.onend = () => stopMic();
+  try { recognition.start(); } catch(e) { showErr('Không thể khởi động mic.'); stopMic(); }
 }
 
 function stopMic() {
-  if (recognition) {
-    try { recognition.abort(); } catch(e) {}
-    recognition = null;
-  }
+  if (recognition) { try { recognition.abort(); } catch(e) {} recognition = null; }
   recording = false;
   micBtn.classList.remove('rec');
   micLbl.textContent = 'Nhấn để nói';
   micLbl.classList.remove('act');
 }
 
-// ==================== UI HELPERS ====================
-function addMsg(role, data) {
-  const id = 'm'+(++mid), div = document.createElement('div');
-  div.className = 'row '+role; div.id = id;
-  const spk = role==='ai'
-    ? `<button class="btn-spk" onclick="speakTxt(${JSON.stringify(data.en)})" title="Nghe lại">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-       </button>` : '';
-  const vi  = data.vi  ? `<div class="bub-vi">${esc(data.vi)}</div>`  : '';
-  const tip = data.tip ? `<div class="bub-tip">💡 ${esc(data.tip)}</div>` : '';
-  div.innerHTML = `<div class="bub ${role}"><div class="bub-hd"><span class="bub-en">${esc(data.en)}</span>${spk}</div>${vi}${tip}</div>`;
-  chatEl.appendChild(div); scroll(); return id;
-}
-function addLoading() {
-  const id='l'+(++mid), div=document.createElement('div');
-  div.className='ld-row'; div.id=id;
-  div.innerHTML=`<div class="ld-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  chatEl.appendChild(div); scroll(); return id;
-}
-function removeEl(id) { document.getElementById(id)?.remove(); }
-function showErr(msg) {
-  removeErr();
-  const d = document.createElement('div');
-  d.className='err-box'; d.id='errbox'; d.textContent='⚠️ '+msg;
-  chatEl.appendChild(d); scroll();
-  setTimeout(() => removeErr(), 6000);
-}
-function removeErr() { document.getElementById('errbox')?.remove(); }
-function renderSuggs(list) {
-  suggsEl.innerHTML = '';
-  list.forEach(s => {
-    const b = document.createElement('button');
-    b.className='sg'; b.textContent=s; b.disabled=busy;
-    b.onclick = () => sendMsg(s);
-    suggsEl.appendChild(b);
+function resetChat() {
+  window.speechSynthesis?.cancel();
+  stopMic();
+  chatEl.innerHTML = '';
+  mid = 0;
+  currentSuggestions = [];
+  addMsg('ai', {
+    en: "Hello! I'm your AI English tutor. Let's practice! How are you today?",
+    vi: "Xin chào! Tôi là gia sư AI của bạn. Hôm nay bạn thế nào?",
+    tip: "Hãy thử trả lời bằng tiếng Anh, tôi sẽ sửa lỗi và gợi ý câu hỏi tiếp theo."
   });
+  renderSuggs([]);
+  saveHistory();
 }
-function setBusy(v) {
-  busy=v;
-  document.querySelectorAll('.sg').forEach(b=>b.disabled=v);
-  if (!v) sndBtn.disabled = !inp.value.trim();
-}
-function scroll() { requestAnimationFrame(()=>{ chatEl.scrollTop = chatEl.scrollHeight; }); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function resetChat() { window.speechSynthesis?.cancel(); stopMic(); initChat(); }
+
+// Auto login
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(KEY_STORE);
+  if (saved) {
+    API_KEY = saved;
+    document.getElementById('keyInput').value = saved;
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadHistory();
+    if (chatEl.children.length === 0) {
+      addMsg('ai', {
+        en: "Hello! I'm your AI English tutor. Let's practice! How are you today?",
+        vi: "Xin chào! Tôi là gia sư AI của bạn. Hôm nay bạn thế nào?",
+        tip: "Hãy thử trả lời bằng tiếng Anh, tôi sẽ sửa lỗi và gợi ý câu hỏi tiếp theo."
+      });
+    }
+    initEventListeners();
+    renderSuggs([]);
+  }
+  document.getElementById('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') startApp(); });
+});
 </script>
 </body>
 </html>
